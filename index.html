@@ -1,0 +1,1279 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Calculadora de Cálculo Planimétrico</title>
+  <style>
+    :root {
+      --bg: #0f172a;
+      --panel: #111827;
+      --panel-2: #1f2937;
+      --line: #334155;
+      --text: #e5e7eb;
+      --muted: #94a3b8;
+      --accent: #22c55e;
+      --accent-2: #38bdf8;
+      --warn: #f59e0b;
+      --danger: #ef4444;
+      --ok: #10b981;
+      --shadow: 0 14px 40px rgba(0,0,0,.25);
+      --radius: 18px;
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      background:
+        radial-gradient(circle at top right, rgba(56,189,248,.14), transparent 26%),
+        radial-gradient(circle at top left, rgba(34,197,94,.11), transparent 22%),
+        var(--bg);
+      color: var(--text);
+    }
+
+    .container {
+      width: min(1400px, calc(100% - 24px));
+      margin: 20px auto 48px;
+    }
+
+    .hero {
+      background: linear-gradient(135deg, rgba(17,24,39,.96), rgba(15,23,42,.92));
+      border: 1px solid rgba(148,163,184,.18);
+      border-radius: 24px;
+      padding: 28px;
+      box-shadow: var(--shadow);
+      margin-bottom: 18px;
+    }
+
+    .hero h1 {
+      margin: 0 0 10px;
+      font-size: clamp(1.7rem, 2.5vw, 2.6rem);
+      line-height: 1.1;
+    }
+
+    .hero p {
+      margin: 0;
+      color: var(--muted);
+      font-size: 1rem;
+      max-width: 980px;
+    }
+
+    .badge-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      margin-top: 16px;
+    }
+
+    .badge {
+      padding: 8px 12px;
+      border-radius: 999px;
+      background: rgba(148,163,184,.12);
+      border: 1px solid rgba(148,163,184,.18);
+      color: var(--text);
+      font-size: .9rem;
+    }
+
+    .layout {
+      display: grid;
+      grid-template-columns: 390px 1fr;
+      gap: 18px;
+      align-items: start;
+    }
+
+    .panel {
+      background: rgba(17,24,39,.95);
+      border: 1px solid rgba(148,163,184,.15);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+    }
+
+    .panel-header {
+      padding: 18px 18px 0;
+    }
+
+    .panel-header h2,
+    .panel-header h3 {
+      margin: 0 0 8px;
+      font-size: 1.08rem;
+    }
+
+    .panel-header p {
+      margin: 0;
+      color: var(--muted);
+      font-size: .94rem;
+    }
+
+    .panel-body {
+      padding: 18px;
+    }
+
+    .sticky {
+      position: sticky;
+      top: 16px;
+    }
+
+    .form-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+    }
+
+    .field {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+
+    .field.full { grid-column: 1 / -1; }
+
+    label {
+      font-size: .9rem;
+      color: #cbd5e1;
+    }
+
+    input, select, textarea, button {
+      font: inherit;
+    }
+
+    input, select, textarea {
+      width: 100%;
+      border: 1px solid rgba(148,163,184,.18);
+      background: rgba(15,23,42,.9);
+      color: var(--text);
+      border-radius: 12px;
+      padding: 11px 12px;
+      outline: none;
+      transition: border-color .18s ease, transform .18s ease, box-shadow .18s ease;
+    }
+
+    input:focus, select:focus, textarea:focus {
+      border-color: rgba(56,189,248,.75);
+      box-shadow: 0 0 0 3px rgba(56,189,248,.14);
+    }
+
+    .help {
+      color: var(--muted);
+      font-size: .8rem;
+      line-height: 1.35;
+    }
+
+    .actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      margin-top: 16px;
+    }
+
+    button {
+      border: 0;
+      cursor: pointer;
+      border-radius: 12px;
+      padding: 11px 14px;
+      font-weight: 600;
+      transition: transform .15s ease, opacity .15s ease, box-shadow .15s ease;
+    }
+
+    button:hover { transform: translateY(-1px); }
+    button:active { transform: translateY(0); }
+
+    .btn-primary {
+      background: linear-gradient(135deg, var(--accent), #16a34a);
+      color: white;
+      box-shadow: 0 10px 20px rgba(34,197,94,.16);
+    }
+
+    .btn-secondary {
+      background: linear-gradient(135deg, var(--accent-2), #0284c7);
+      color: white;
+      box-shadow: 0 10px 20px rgba(56,189,248,.16);
+    }
+
+    .btn-ghost {
+      background: rgba(148,163,184,.1);
+      color: var(--text);
+      border: 1px solid rgba(148,163,184,.15);
+    }
+
+    .btn-warn {
+      background: linear-gradient(135deg, #f59e0b, #d97706);
+      color: white;
+    }
+
+    .status-grid {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 12px;
+      margin-bottom: 18px;
+    }
+
+    .stat {
+      background: rgba(15,23,42,.9);
+      border: 1px solid rgba(148,163,184,.12);
+      border-radius: 16px;
+      padding: 14px;
+      min-height: 88px;
+    }
+
+    .stat .label {
+      color: var(--muted);
+      font-size: .84rem;
+      margin-bottom: 8px;
+    }
+
+    .stat .value {
+      font-size: 1.2rem;
+      font-weight: 700;
+      line-height: 1.2;
+      word-break: break-word;
+    }
+
+    .ok { color: var(--ok); }
+    .danger { color: var(--danger); }
+    .warn { color: var(--warn); }
+
+    .dynamic-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 14px;
+      margin-top: 16px;
+    }
+
+    .mini-card {
+      background: rgba(15,23,42,.82);
+      border: 1px solid rgba(148,163,184,.12);
+      border-radius: 16px;
+      padding: 14px;
+    }
+
+    .mini-card h4 {
+      margin: 0 0 12px;
+      font-size: .98rem;
+    }
+
+    .mini-list {
+      display: grid;
+      gap: 10px;
+    }
+
+    .table-wrap {
+      overflow: auto;
+      border: 1px solid rgba(148,163,184,.12);
+      border-radius: 16px;
+      background: rgba(15,23,42,.84);
+    }
+
+    table {
+      border-collapse: collapse;
+      width: 100%;
+      min-width: 880px;
+    }
+
+    th, td {
+      padding: 11px 12px;
+      border-bottom: 1px solid rgba(148,163,184,.1);
+      border-right: 1px solid rgba(148,163,184,.08);
+      text-align: left;
+      vertical-align: top;
+      font-size: .92rem;
+    }
+
+    th {
+      position: sticky;
+      top: 0;
+      z-index: 1;
+      background: rgba(30,41,59,.96);
+      color: #f8fafc;
+      white-space: nowrap;
+    }
+
+    tr:nth-child(even) td {
+      background: rgba(255,255,255,.012);
+    }
+
+    .section {
+      margin-top: 18px;
+    }
+
+    .section-title {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 10px;
+    }
+
+    .section-title h3 {
+      margin: 0;
+      font-size: 1.06rem;
+    }
+
+    .section-title span {
+      color: var(--muted);
+      font-size: .85rem;
+    }
+
+    .summary-grid {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 12px;
+    }
+
+    .summary-card {
+      background: rgba(15,23,42,.88);
+      border: 1px solid rgba(148,163,184,.12);
+      border-radius: 16px;
+      padding: 14px;
+    }
+
+    .summary-card h4 {
+      margin: 0 0 10px;
+      font-size: .95rem;
+    }
+
+    .summary-card dl {
+      margin: 0;
+      display: grid;
+      grid-template-columns: auto 1fr;
+      gap: 6px 10px;
+      font-size: .9rem;
+    }
+
+    .summary-card dt { color: var(--muted); }
+    .summary-card dd { margin: 0; font-weight: 600; }
+
+    .chart-card {
+      background: rgba(15,23,42,.86);
+      border: 1px solid rgba(148,163,184,.12);
+      border-radius: 18px;
+      padding: 14px;
+      overflow: hidden;
+    }
+
+    #plotSvg {
+      width: 100%;
+      min-height: 620px;
+      display: block;
+      background:
+        radial-gradient(circle at center, rgba(56,189,248,.06), transparent 45%),
+        linear-gradient(180deg, rgba(15,23,42,.95), rgba(2,6,23,.98));
+      border-radius: 14px;
+      border: 1px solid rgba(148,163,184,.08);
+    }
+
+    .legend {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 14px;
+      margin-top: 10px;
+      color: var(--muted);
+      font-size: .88rem;
+    }
+
+    .legend-item {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .legend-line {
+      width: 28px;
+      height: 0;
+      border-top: 3px solid var(--accent-2);
+      border-radius: 999px;
+    }
+
+    .legend-point {
+      width: 12px;
+      height: 12px;
+      border-radius: 999px;
+      background: var(--accent);
+      border: 2px solid white;
+    }
+
+    .notes {
+      margin-top: 14px;
+      font-size: .86rem;
+      color: var(--muted);
+      line-height: 1.5;
+    }
+
+    code.inline {
+      background: rgba(148,163,184,.14);
+      padding: 2px 6px;
+      border-radius: 8px;
+      color: #e2e8f0;
+    }
+
+    .empty-state {
+      border: 1px dashed rgba(148,163,184,.25);
+      border-radius: 18px;
+      padding: 26px;
+      text-align: center;
+      color: var(--muted);
+      background: rgba(15,23,42,.6);
+    }
+
+    @media (max-width: 1120px) {
+      .layout { grid-template-columns: 1fr; }
+      .sticky { position: static; }
+      .status-grid,
+      .summary-grid,
+      .dynamic-grid { grid-template-columns: 1fr 1fr; }
+    }
+
+    @media (max-width: 760px) {
+      .container { width: min(100% - 14px, 100%); }
+      .hero, .panel-body, .panel-header { padding-left: 14px; padding-right: 14px; }
+      .form-grid,
+      .status-grid,
+      .summary-grid,
+      .dynamic-grid { grid-template-columns: 1fr; }
+      #plotSvg { min-height: 420px; }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <section class="hero">
+      <h1>Calculadora de Cálculo Planimétrico</h1>
+      <p>
+        Página estática em HTML, CSS e JavaScript para GitHub Pages. Ela segue a convenção da aula:
+        azimute a partir do Norte no sentido horário, projeções relativas por <code class="inline">X = d · sen(Az)</code>
+        e <code class="inline">Y = d · cos(Az)</code>, fechamento angular, cálculo dos azimutes, fechamento linear,
+        correções proporcionais e coordenadas absolutas.
+      </p>
+      <div class="badge-row">
+        <span class="badge">Fechamento angular</span>
+        <span class="badge">Azimutes</span>
+        <span class="badge">Projeções X/Y</span>
+        <span class="badge">Correção proporcional</span>
+        <span class="badge">Tabela final</span>
+        <span class="badge">Gráfico cartesiano</span>
+      </div>
+    </section>
+
+    <div class="layout">
+      <aside class="panel sticky">
+        <div class="panel-header">
+          <h2>Entradas</h2>
+          <p>Defina o número de vértices e preencha os dados. Os campos são gerados automaticamente.</p>
+        </div>
+        <div class="panel-body">
+          <div class="form-grid">
+            <div class="field">
+              <label for="nVertices">Número de vértices (n)</label>
+              <input id="nVertices" type="number" min="3" max="50" step="1" value="4" />
+            </div>
+            <div class="field">
+              <label for="azPartida">Azimute de partida</label>
+              <input id="azPartida" type="text" value="100°" placeholder="Ex.: 100° ou 100 00 00" />
+            </div>
+
+            <div class="field">
+              <label for="xInicial">Coordenada X inicial</label>
+              <input id="xInicial" type="number" step="any" value="100" />
+            </div>
+            <div class="field">
+              <label for="yInicial">Coordenada Y inicial</label>
+              <input id="yInicial" type="number" step="any" value="100" />
+            </div>
+
+            <div class="field">
+              <label for="constB">Constante angular b (segundos)</label>
+              <input id="constB" type="number" min="0" step="any" value="180" />
+            </div>
+            <div class="field">
+              <label for="constD">Constante linear d (m/√km)</label>
+              <input id="constD" type="number" min="0" step="any" value="2.20" />
+            </div>
+
+            <div class="field full">
+              <label for="rotulosInput">Rótulos dos pontos</label>
+              <input id="rotulosInput" type="text" value="A,B,C,D" placeholder="Ex.: A,B,C,D ou P1,P2,P3,P4" />
+              <div class="help">Os rótulos devem ter a mesma quantidade de vértices. Se ficar vazio, a página gera automaticamente.</div>
+            </div>
+          </div>
+
+          <div id="dynamicInputs" class="dynamic-grid"></div>
+
+          <div class="actions">
+            <button class="btn-primary" id="btnCalcular">Calcular</button>
+            <button class="btn-secondary" id="btnExemplo">Carregar exemplo da aula</button>
+            <button class="btn-ghost" id="btnGerar">Atualizar campos</button>
+            <button class="btn-warn" id="btnCsv">Baixar CSV final</button>
+          </div>
+
+          <div class="notes">
+            Formatos aceitos para ângulos e azimutes: <strong>graus decimais</strong> ou <strong>G M S</strong>.<br />
+            Exemplos válidos: <code class="inline">76°33'</code>, <code class="inline">76 33 45</code>, <code class="inline">76.5625</code>.<br />
+            Convenção adotada na página: <code class="inline">Azᵢ₊₁ = Azᵢ + AHcorr - 180°</code>, com normalização para 0°–360°.
+          </div>
+        </div>
+      </aside>
+
+      <main>
+        <div class="status-grid" id="statusGrid">
+          <div class="stat"><div class="label">Fechamento angular</div><div class="value">—</div></div>
+          <div class="stat"><div class="label">Tolerância angular</div><div class="value">—</div></div>
+          <div class="stat"><div class="label">Fechamento linear</div><div class="value">—</div></div>
+          <div class="stat"><div class="label">Tolerância linear</div><div class="value">—</div></div>
+        </div>
+
+        <div id="resultsRoot" class="panel">
+          <div class="panel-header">
+            <h2>Resultados</h2>
+            <p>A planilha completa aparece abaixo depois do cálculo.</p>
+          </div>
+          <div class="panel-body">
+            <div id="emptyState" class="empty-state">
+              Preencha os dados e clique em <strong>Calcular</strong>.
+            </div>
+            <div id="resultsContent" style="display:none;"></div>
+          </div>
+        </div>
+      </main>
+    </div>
+  </div>
+
+  <script>
+    const $ = (id) => document.getElementById(id);
+
+    const nVerticesEl = $("nVertices");
+    const dynamicInputsEl = $("dynamicInputs");
+    const resultsContentEl = $("resultsContent");
+    const emptyStateEl = $("emptyState");
+    const statusGridEl = $("statusGrid");
+
+    let lastComputation = null;
+
+    function sanitizeNumberToken(token) {
+      return token.replace(/,/g, ".").trim();
+    }
+
+    function parseAngle(value) {
+      const raw = String(value ?? "").trim();
+      if (!raw) return NaN;
+
+      const normalized = raw
+        .replace(/[º°]/g, " ")
+        .replace(/[′']/g, " ")
+        .replace(/[″\"]/g, " ")
+        .replace(/,/g, ".")
+        .replace(/\s+/g, " ")
+        .trim();
+
+      const parts = normalized.split(" ").filter(Boolean);
+      if (!parts.length) return NaN;
+
+      if (parts.length === 1) {
+        const v = Number(parts[0]);
+        return Number.isFinite(v) ? v : NaN;
+      }
+
+      const deg = Number(sanitizeNumberToken(parts[0]));
+      const min = Number(sanitizeNumberToken(parts[1] || "0"));
+      const sec = Number(sanitizeNumberToken(parts[2] || "0"));
+      if (![deg, min, sec].every(Number.isFinite)) return NaN;
+
+      const sign = deg < 0 ? -1 : 1;
+      return sign * (Math.abs(deg) + Math.abs(min) / 60 + Math.abs(sec) / 3600);
+    }
+
+    function degToDmsParts(deg) {
+      const sign = deg < 0 ? -1 : 1;
+      let abs = Math.abs(deg);
+      let d = Math.floor(abs);
+      let mFloat = (abs - d) * 60;
+      let m = Math.floor(mFloat);
+      let s = (mFloat - m) * 60;
+
+      s = Math.round(s * 100) / 100;
+      if (s >= 60) {
+        s -= 60;
+        m += 1;
+      }
+      if (m >= 60) {
+        m -= 60;
+        d += 1;
+      }
+
+      return { sign, d, m, s };
+    }
+
+    function formatDMS(deg, options = {}) {
+      const { signed = false, secDecimals = 2 } = options;
+      if (!Number.isFinite(deg)) return "—";
+      const { sign, d, m, s } = degToDmsParts(deg);
+      const prefix = sign < 0 ? "-" : (signed ? "+" : "");
+      const sFormatted = s.toFixed(secDecimals).replace(/\.00$/, "").replace(/(\.\d*[1-9])0+$/, "$1");
+      return `${prefix}${d}° ${String(m).padStart(2, "0")}' ${String(sFormatted).padStart(sFormatted.includes(".") ? sFormatted.length : 2, "0")}"`;
+    }
+
+    function formatNumber(value, decimals = 3) {
+      if (!Number.isFinite(value)) return "—";
+      return value.toLocaleString("pt-BR", {
+        minimumFractionDigits: decimals,
+        maximumFractionDigits: decimals,
+      });
+    }
+
+    function normalize360(deg) {
+      let value = deg % 360;
+      if (value < 0) value += 360;
+      if (Math.abs(value - 360) < 1e-10) value = 0;
+      return value;
+    }
+
+    function toRadians(deg) {
+      return deg * Math.PI / 180;
+    }
+
+    function buildDefaultLabels(n) {
+      const labels = [];
+      for (let i = 0; i < n; i += 1) {
+        if (i < 26) labels.push(String.fromCharCode(65 + i));
+        else labels.push(`P${i + 1}`);
+      }
+      return labels;
+    }
+
+    function getLabels(n) {
+      const raw = $("rotulosInput").value.trim();
+      if (!raw) return buildDefaultLabels(n);
+      const labels = raw.split(",").map(v => v.trim()).filter(Boolean);
+      if (labels.length !== n) return buildDefaultLabels(n);
+      return labels;
+    }
+
+    function buildDynamicInputs() {
+      const n = Math.max(3, Math.min(50, Number(nVerticesEl.value) || 4));
+      nVerticesEl.value = n;
+
+      const currentLabels = getLabels(n);
+      const angleInputs = [];
+      const distanceInputs = [];
+
+      for (let i = 0; i < n; i += 1) {
+        const pointLabel = currentLabels[i] || `P${i + 1}`;
+        angleInputs.push(`
+          <div class="field">
+            <label for="angle_${i}">Ângulo em ${pointLabel}</label>
+            <input id="angle_${i}" type="text" placeholder="Ex.: 76°33'45\"" />
+          </div>
+        `);
+
+        const start = currentLabels[i] || `P${i + 1}`;
+        const end = currentLabels[(i + 1) % n] || `P${((i + 1) % n) + 1}`;
+        distanceInputs.push(`
+          <div class="field">
+            <label for="dist_${i}">Distância ${start}-${end}</label>
+            <input id="dist_${i}" type="number" step="any" min="0" placeholder="Ex.: 113.37" />
+          </div>
+        `);
+      }
+
+      dynamicInputsEl.innerHTML = `
+        <div class="mini-card">
+          <h4>Ângulos dos vértices</h4>
+          <div class="mini-list">
+            ${angleInputs.join("")}
+          </div>
+        </div>
+        <div class="mini-card">
+          <h4>Distâncias entre pontos</h4>
+          <div class="mini-list">
+            ${distanceInputs.join("")}
+          </div>
+        </div>
+      `;
+    }
+
+    function setStatusCards(items) {
+      statusGridEl.innerHTML = items.map(item => `
+        <div class="stat">
+          <div class="label">${item.label}</div>
+          <div class="value ${item.className || ""}">${item.value}</div>
+        </div>
+      `).join("");
+    }
+
+    function readInputs() {
+      const n = Number(nVerticesEl.value);
+      const labels = getLabels(n);
+      const angles = [];
+      const distances = [];
+
+      for (let i = 0; i < n; i += 1) {
+        const angleValue = parseAngle($("angle_" + i).value);
+        const distanceValue = Number(String($("dist_" + i).value).replace(/,/g, "."));
+        if (!Number.isFinite(angleValue)) {
+          throw new Error(`Ângulo inválido no vértice ${labels[i]}.`);
+        }
+        if (!Number.isFinite(distanceValue) || distanceValue <= 0) {
+          const start = labels[i];
+          const end = labels[(i + 1) % n];
+          throw new Error(`Distância inválida no segmento ${start}-${end}.`);
+        }
+        angles.push(angleValue);
+        distances.push(distanceValue);
+      }
+
+      const azStart = parseAngle($("azPartida").value);
+      const x0 = Number(String($("xInicial").value).replace(/,/g, "."));
+      const y0 = Number(String($("yInicial").value).replace(/,/g, "."));
+      const bArcsec = Number(String($("constB").value).replace(/,/g, "."));
+      const dLinear = Number(String($("constD").value).replace(/,/g, "."));
+
+      if (!Number.isFinite(azStart)) throw new Error("Azimute de partida inválido.");
+      if (!Number.isFinite(x0) || !Number.isFinite(y0)) throw new Error("Coordenadas iniciais inválidas.");
+      if (!Number.isFinite(bArcsec) || bArcsec < 0) throw new Error("Constante angular b inválida.");
+      if (!Number.isFinite(dLinear) || dLinear < 0) throw new Error("Constante linear d inválida.");
+
+      return {
+        n,
+        labels,
+        angles,
+        distances,
+        azStart: normalize360(azStart),
+        x0,
+        y0,
+        bArcsec,
+        dLinear,
+      };
+    }
+
+    function computeTraverse(data) {
+      const { n, labels, angles, distances, azStart, x0, y0, bArcsec, dLinear } = data;
+
+      const theoreticalAngle = (n - 2) * 180;
+      const sumMeasuredAngles = angles.reduce((acc, v) => acc + v, 0);
+      const angularError = sumMeasuredAngles - theoreticalAngle;
+      const angularToleranceArcsec = bArcsec * Math.sqrt(n);
+      const angularErrorArcsec = Math.abs(angularError) * 3600;
+      const angularAccepted = angularErrorArcsec <= angularToleranceArcsec + 1e-12;
+      const angleCorrectionEach = -angularError / n;
+      const correctedAngles = angles.map(v => v + angleCorrectionEach);
+
+      const azimuths = new Array(n).fill(0);
+      azimuths[0] = azStart;
+      for (let i = 1; i < n; i += 1) {
+        azimuths[i] = normalize360(azimuths[i - 1] + correctedAngles[i] - 180);
+      }
+      const returnAzimuth = normalize360(azimuths[n - 1] + correctedAngles[0] - 180);
+      const azimuthClosure = normalize360(returnAzimuth - azStart);
+
+      const rawProj = distances.map((dist, i) => {
+        const az = azimuths[i];
+        const dx = dist * Math.sin(toRadians(az));
+        const dy = dist * Math.cos(toRadians(az));
+        return { dx, dy };
+      });
+
+      const sumDx = rawProj.reduce((acc, row) => acc + row.dx, 0);
+      const sumDy = rawProj.reduce((acc, row) => acc + row.dy, 0);
+      const xPlus = rawProj.filter(r => r.dx > 0).reduce((acc, r) => acc + r.dx, 0);
+      const xMinusAbs = rawProj.filter(r => r.dx < 0).reduce((acc, r) => acc + Math.abs(r.dx), 0);
+      const yPlus = rawProj.filter(r => r.dy > 0).reduce((acc, r) => acc + r.dy, 0);
+      const yMinusAbs = rawProj.filter(r => r.dy < 0).reduce((acc, r) => acc + Math.abs(r.dy), 0);
+
+      const linearError = Math.hypot(sumDx, sumDy);
+      const perimeter = distances.reduce((acc, v) => acc + v, 0);
+      const perimeterKm = perimeter / 1000;
+      const linearTolerance = dLinear * Math.sqrt(perimeterKm);
+      const linearAccepted = linearError <= linearTolerance + 1e-12;
+
+      const factorX = perimeter === 0 ? 0 : sumDx / perimeter;
+      const factorY = perimeter === 0 ? 0 : sumDy / perimeter;
+
+      const corrections = distances.map(dist => ({
+        corrX: -factorX * dist,
+        corrY: -factorY * dist,
+      }));
+
+      const correctedProj = rawProj.map((row, i) => ({
+        dx: row.dx + corrections[i].corrX,
+        dy: row.dy + corrections[i].corrY,
+      }));
+
+      const correctedDxSum = correctedProj.reduce((acc, row) => acc + row.dx, 0);
+      const correctedDySum = correctedProj.reduce((acc, row) => acc + row.dy, 0);
+
+      const pointCoords = [{ label: labels[0], x: x0, y: y0 }];
+      for (let i = 0; i < n - 1; i += 1) {
+        const prev = pointCoords[i];
+        pointCoords.push({
+          label: labels[i + 1],
+          x: prev.x + correctedProj[i].dx,
+          y: prev.y + correctedProj[i].dy,
+        });
+      }
+
+      const closedCheck = {
+        x: pointCoords[n - 1].x + correctedProj[n - 1].dx,
+        y: pointCoords[n - 1].y + correctedProj[n - 1].dy,
+      };
+
+      const rows = distances.map((dist, i) => {
+        const start = labels[i];
+        const end = labels[(i + 1) % n];
+        const angleVertex = labels[i];
+        const startPoint = i === 0 ? pointCoords[0] : pointCoords[i];
+        const endPoint = i === n - 1 ? { label: labels[0], x: closedCheck.x, y: closedCheck.y } : pointCoords[i + 1];
+
+        return {
+          index: i + 1,
+          segment: `${start}-${end}`,
+          angleVertex,
+          measuredAngle: angles[i],
+          correctedAngle: correctedAngles[i],
+          angleCorrection: angleCorrectionEach,
+          distance: dist,
+          azimuth: azimuths[i],
+          rawDx: rawProj[i].dx,
+          rawDy: rawProj[i].dy,
+          corrX: corrections[i].corrX,
+          corrY: corrections[i].corrY,
+          corrDx: correctedProj[i].dx,
+          corrDy: correctedProj[i].dy,
+          xStart: startPoint.x,
+          yStart: startPoint.y,
+          xEnd: endPoint.x,
+          yEnd: endPoint.y,
+        };
+      });
+
+      return {
+        input: data,
+        labels,
+        theoreticalAngle,
+        sumMeasuredAngles,
+        angularError,
+        angularErrorArcsec,
+        angularToleranceArcsec,
+        angularAccepted,
+        angleCorrectionEach,
+        correctedAngles,
+        azimuths,
+        returnAzimuth,
+        azimuthClosure,
+        rawProj,
+        xPlus,
+        xMinusAbs,
+        yPlus,
+        yMinusAbs,
+        sumDx,
+        sumDy,
+        linearError,
+        perimeter,
+        perimeterKm,
+        linearTolerance,
+        linearAccepted,
+        factorX,
+        factorY,
+        corrections,
+        correctedProj,
+        correctedDxSum,
+        correctedDySum,
+        pointCoords,
+        closedCheck,
+        rows,
+      };
+    }
+
+    function renderSummary(computation) {
+      const angularStatusClass = computation.angularAccepted ? "ok" : "danger";
+      const linearStatusClass = computation.linearAccepted ? "ok" : "danger";
+
+      setStatusCards([
+        {
+          label: "Fechamento angular",
+          value: `${formatDMS(computation.angularError, { signed: true, secDecimals: 2 })}`,
+          className: angularStatusClass,
+        },
+        {
+          label: "Tolerância angular",
+          value: `${formatNumber(computation.angularToleranceArcsec, 2)}\"`,
+          className: computation.angularAccepted ? "ok" : "warn",
+        },
+        {
+          label: "Fechamento linear",
+          value: `${formatNumber(computation.linearError, 4)} m`,
+          className: linearStatusClass,
+        },
+        {
+          label: "Tolerância linear",
+          value: `${formatNumber(computation.linearTolerance, 4)} m`,
+          className: computation.linearAccepted ? "ok" : "warn",
+        },
+      ]);
+
+      const resultHtml = `
+        <div class="summary-grid">
+          <div class="summary-card">
+            <h4>Etapa 1 · Fechamento angular</h4>
+            <dl>
+              <dt>n</dt><dd>${computation.input.n}</dd>
+              <dt>Soma medida</dt><dd>${formatDMS(computation.sumMeasuredAngles)}</dd>
+              <dt>Soma teórica</dt><dd>${formatDMS(computation.theoreticalAngle)}</dd>
+              <dt>Erro angular</dt><dd>${formatDMS(computation.angularError, { signed: true, secDecimals: 2 })}</dd>
+              <dt>Tolerância</dt><dd>${formatNumber(computation.angularToleranceArcsec, 2)}\"</dd>
+              <dt>Situação</dt><dd class="${computation.angularAccepted ? "ok" : "danger"}">${computation.angularAccepted ? "Dentro da tolerância" : "Fora da tolerância"}</dd>
+            </dl>
+          </div>
+
+          <div class="summary-card">
+            <h4>Etapa 2 · Fechamento linear</h4>
+            <dl>
+              <dt>ΣX</dt><dd>${formatNumber(computation.sumDx, 4)} m</dd>
+              <dt>ΣY</dt><dd>${formatNumber(computation.sumDy, 4)} m</dd>
+              <dt>EL</dt><dd>${formatNumber(computation.linearError, 4)} m</dd>
+              <dt>Perímetro</dt><dd>${formatNumber(computation.perimeter, 3)} m</dd>
+              <dt>Tolerância</dt><dd>${formatNumber(computation.linearTolerance, 4)} m</dd>
+              <dt>Situação</dt><dd class="${computation.linearAccepted ? "ok" : "danger"}">${computation.linearAccepted ? "Dentro da tolerância" : "Fora da tolerância"}</dd>
+            </dl>
+          </div>
+
+          <div class="summary-card">
+            <h4>Etapa 3 · Fatores e retorno</h4>
+            <dl>
+              <dt>Fator X</dt><dd>${formatNumber(computation.factorX, 8)}</dd>
+              <dt>Fator Y</dt><dd>${formatNumber(computation.factorY, 8)}</dd>
+              <dt>Az. de retorno</dt><dd>${formatDMS(computation.returnAzimuth)}</dd>
+              <dt>Fech. azimute</dt><dd>${formatDMS(computation.azimuthClosure, { signed: false, secDecimals: 2 })}</dd>
+              <dt>Retorno X</dt><dd>${formatNumber(computation.closedCheck.x, 3)}</dd>
+              <dt>Retorno Y</dt><dd>${formatNumber(computation.closedCheck.y, 3)}</dd>
+            </dl>
+          </div>
+        </div>
+
+        <div class="section">
+          <div class="section-title">
+            <h3>Planilha por segmento</h3>
+            <span>Todas as etapas consolidadas</span>
+          </div>
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th>#</th>
+                  <th>Segmento</th>
+                  <th>Ângulo medido</th>
+                  <th>Correção angular</th>
+                  <th>Ângulo corrigido</th>
+                  <th>Distância</th>
+                  <th>Azimute</th>
+                  <th>PX bruto</th>
+                  <th>PY bruto</th>
+                  <th>Corr. X</th>
+                  <th>Corr. Y</th>
+                  <th>PX corrigido</th>
+                  <th>PY corrigido</th>
+                  <th>X início</th>
+                  <th>Y início</th>
+                  <th>X fim</th>
+                  <th>Y fim</th>
+                </tr>
+              </thead>
+              <tbody>
+                ${computation.rows.map(row => `
+                  <tr>
+                    <td>${row.index}</td>
+                    <td>${row.segment}</td>
+                    <td>${formatDMS(row.measuredAngle)}</td>
+                    <td>${formatDMS(row.angleCorrection, { signed: true, secDecimals: 2 })}</td>
+                    <td>${formatDMS(row.correctedAngle)}</td>
+                    <td>${formatNumber(row.distance, 3)}</td>
+                    <td>${formatDMS(row.azimuth)}</td>
+                    <td>${formatNumber(row.rawDx, 3)}</td>
+                    <td>${formatNumber(row.rawDy, 3)}</td>
+                    <td>${formatNumber(row.corrX, 4)}</td>
+                    <td>${formatNumber(row.corrY, 4)}</td>
+                    <td>${formatNumber(row.corrDx, 3)}</td>
+                    <td>${formatNumber(row.corrDy, 3)}</td>
+                    <td>${formatNumber(row.xStart, 3)}</td>
+                    <td>${formatNumber(row.yStart, 3)}</td>
+                    <td>${formatNumber(row.xEnd, 3)}</td>
+                    <td>${formatNumber(row.yEnd, 3)}</td>
+                  </tr>
+                `).join("")}
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <div class="section">
+          <div class="section-title">
+            <h3>Detalhamento das etapas</h3>
+            <span>Resumo organizado como na aula</span>
+          </div>
+          <div class="summary-grid">
+            <div class="summary-card">
+              <h4>Ângulos</h4>
+              <dl>
+                <dt>Correção por ângulo</dt><dd>${formatDMS(computation.angleCorrectionEach, { signed: true, secDecimals: 2 })}</dd>
+                <dt>Erro angular</dt><dd>${formatNumber(computation.angularErrorArcsec, 2)}\"</dd>
+                <dt>Tolerância</dt><dd>${formatNumber(computation.angularToleranceArcsec, 2)}\"</dd>
+              </dl>
+            </div>
+            <div class="summary-card">
+              <h4>Projeções brutas</h4>
+              <dl>
+                <dt>Σ(X+)</dt><dd>${formatNumber(computation.xPlus, 3)}</dd>
+                <dt>Σ(|X-|)</dt><dd>${formatNumber(computation.xMinusAbs, 3)}</dd>
+                <dt>Σ(Y+)</dt><dd>${formatNumber(computation.yPlus, 3)}</dd>
+                <dt>Σ(|Y-|)</dt><dd>${formatNumber(computation.yMinusAbs, 3)}</dd>
+              </dl>
+            </div>
+            <div class="summary-card">
+              <h4>Checagem final</h4>
+              <dl>
+                <dt>Σ(PXcorr)</dt><dd>${formatNumber(computation.correctedDxSum, 8)}</dd>
+                <dt>Σ(PYcorr)</dt><dd>${formatNumber(computation.correctedDySum, 8)}</dd>
+                <dt>X retorno</dt><dd>${formatNumber(computation.closedCheck.x, 3)}</dd>
+                <dt>Y retorno</dt><dd>${formatNumber(computation.closedCheck.y, 3)}</dd>
+              </dl>
+            </div>
+          </div>
+        </div>
+
+        <div class="section">
+          <div class="section-title">
+            <h3>Coordenadas absolutas</h3>
+            <span>Pontos calculados a partir do ponto inicial</span>
+          </div>
+          <div class="table-wrap">
+            <table style="min-width: 540px;">
+              <thead>
+                <tr>
+                  <th>Ponto</th>
+                  <th>X</th>
+                  <th>Y</th>
+                </tr>
+              </thead>
+              <tbody>
+                ${computation.pointCoords.map(point => `
+                  <tr>
+                    <td>${point.label}</td>
+                    <td>${formatNumber(point.x, 3)}</td>
+                    <td>${formatNumber(point.y, 3)}</td>
+                  </tr>
+                `).join("")}
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <div class="section">
+          <div class="section-title">
+            <h3>Gráfico cartesiano</h3>
+            <span>Poligonal com coordenadas absolutas corrigidas</span>
+          </div>
+          <div class="chart-card">
+            <svg id="plotSvg" viewBox="0 0 1000 620" xmlns="http://www.w3.org/2000/svg" aria-label="Gráfico cartesiano da poligonal"></svg>
+            <div class="legend">
+              <span class="legend-item"><span class="legend-line"></span> Poligonal</span>
+              <span class="legend-item"><span class="legend-point"></span> Pontos calculados</span>
+            </div>
+          </div>
+        </div>
+      `;
+
+      emptyStateEl.style.display = "none";
+      resultsContentEl.style.display = "block";
+      resultsContentEl.innerHTML = resultHtml;
+      renderPlot(computation);
+    }
+
+    function renderPlot(computation) {
+      const svg = $("plotSvg");
+      if (!svg) return;
+
+      const points = [...computation.pointCoords, { ...computation.pointCoords[0] }];
+      const xs = points.map(p => p.x);
+      const ys = points.map(p => p.y);
+      const minX = Math.min(...xs);
+      const maxX = Math.max(...xs);
+      const minY = Math.min(...ys);
+      const maxY = Math.max(...ys);
+
+      let rangeX = maxX - minX;
+      let rangeY = maxY - minY;
+      if (rangeX === 0) rangeX = 1;
+      if (rangeY === 0) rangeY = 1;
+
+      const padFactor = 0.18;
+      const span = Math.max(rangeX, rangeY);
+      const extra = span * padFactor;
+      const xMin = minX - extra;
+      const xMax = maxX + extra;
+      const yMin = minY - extra;
+      const yMax = maxY + extra;
+
+      const width = 1000;
+      const height = 620;
+      const margin = 70;
+
+      const scaleX = (value) => margin + ((value - xMin) / (xMax - xMin)) * (width - 2 * margin);
+      const scaleY = (value) => height - margin - ((value - yMin) / (yMax - yMin)) * (height - 2 * margin);
+
+      const gridLines = 6;
+      let content = "";
+
+      for (let i = 0; i <= gridLines; i += 1) {
+        const tx = margin + (i / gridLines) * (width - 2 * margin);
+        const ty = margin + (i / gridLines) * (height - 2 * margin);
+        const xv = xMin + (i / gridLines) * (xMax - xMin);
+        const yv = yMax - (i / gridLines) * (yMax - yMin);
+
+        content += `<line x1="${tx}" y1="${margin}" x2="${tx}" y2="${height - margin}" stroke="rgba(148,163,184,.14)" stroke-width="1" />`;
+        content += `<line x1="${margin}" y1="${ty}" x2="${width - margin}" y2="${ty}" stroke="rgba(148,163,184,.14)" stroke-width="1" />`;
+        content += `<text x="${tx}" y="${height - margin + 24}" fill="rgba(226,232,240,.78)" font-size="13" text-anchor="middle">${formatNumber(xv, 1)}</text>`;
+        content += `<text x="${margin - 12}" y="${ty + 4}" fill="rgba(226,232,240,.78)" font-size="13" text-anchor="end">${formatNumber(yv, 1)}</text>`;
+      }
+
+      content += `<line x1="${margin}" y1="${height - margin}" x2="${width - margin}" y2="${height - margin}" stroke="rgba(226,232,240,.6)" stroke-width="1.5" />`;
+      content += `<line x1="${margin}" y1="${margin}" x2="${margin}" y2="${height - margin}" stroke="rgba(226,232,240,.6)" stroke-width="1.5" />`;
+      content += `<text x="${width - margin + 16}" y="${height - margin + 4}" fill="white" font-size="14">X</text>`;
+      content += `<text x="${margin - 4}" y="${margin - 14}" fill="white" font-size="14">Y</text>`;
+
+      const polylinePoints = points.map(p => `${scaleX(p.x)},${scaleY(p.y)}`).join(" ");
+      content += `<polyline fill="none" stroke="#38bdf8" stroke-width="3.5" points="${polylinePoints}" />`;
+
+      computation.pointCoords.forEach((point, index) => {
+        const cx = scaleX(point.x);
+        const cy = scaleY(point.y);
+        content += `<circle cx="${cx}" cy="${cy}" r="6.5" fill="#22c55e" stroke="white" stroke-width="2" />`;
+        content += `<text x="${cx + 12}" y="${cy - 12}" fill="white" font-size="14" font-weight="700">${point.label}</text>`;
+        content += `<text x="${cx + 12}" y="${cy + 8}" fill="rgba(226,232,240,.8)" font-size="12">(${formatNumber(point.x, 2)} ; ${formatNumber(point.y, 2)})</text>`;
+        if (index < computation.pointCoords.length - 1) {
+          const next = computation.pointCoords[index + 1];
+          const mx = (cx + scaleX(next.x)) / 2;
+          const my = (cy + scaleY(next.y)) / 2;
+          content += `<text x="${mx}" y="${my - 8}" fill="#f8fafc" font-size="12" text-anchor="middle">${computation.rows[index].segment}</text>`;
+        }
+      });
+
+      svg.innerHTML = content;
+    }
+
+    function exportCsv() {
+      if (!lastComputation) {
+        alert("Faça um cálculo antes de exportar o CSV.");
+        return;
+      }
+
+      const header = [
+        "indice",
+        "segmento",
+        "angulo_medido_graus",
+        "angulo_corrigido_graus",
+        "correcao_angular_graus",
+        "distancia_m",
+        "azimute_graus",
+        "px_bruto",
+        "py_bruto",
+        "correcao_x",
+        "correcao_y",
+        "px_corrigido",
+        "py_corrigido",
+        "x_inicio",
+        "y_inicio",
+        "x_fim",
+        "y_fim"
+      ];
+
+      const rows = lastComputation.rows.map(row => [
+        row.index,
+        row.segment,
+        row.measuredAngle,
+        row.correctedAngle,
+        row.angleCorrection,
+        row.distance,
+        row.azimuth,
+        row.rawDx,
+        row.rawDy,
+        row.corrX,
+        row.corrY,
+        row.corrDx,
+        row.corrDy,
+        row.xStart,
+        row.yStart,
+        row.xEnd,
+        row.yEnd,
+      ]);
+
+      const pointHeader = ["ponto", "x", "y"];
+      const pointRows = lastComputation.pointCoords.map(p => [p.label, p.x, p.y]);
+
+      const csvLines = [];
+      csvLines.push("Planilha final");
+      csvLines.push(header.join(";"));
+      rows.forEach(r => csvLines.push(r.join(";")));
+      csvLines.push("");
+      csvLines.push("Coordenadas absolutas");
+      csvLines.push(pointHeader.join(";"));
+      pointRows.forEach(r => csvLines.push(r.join(";")));
+
+      const blob = new Blob([csvLines.join("\n")], { type: "text/csv;charset=utf-8;" });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = "planilha_calculo_planimetrico.csv";
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(url);
+    }
+
+    function calculateAndRender() {
+      try {
+        const data = readInputs();
+        const computation = computeTraverse(data);
+        lastComputation = computation;
+        renderSummary(computation);
+      } catch (error) {
+        emptyStateEl.style.display = "block";
+        resultsContentEl.style.display = "none";
+        resultsContentEl.innerHTML = "";
+        setStatusCards([
+          { label: "Fechamento angular", value: "Erro de entrada", className: "danger" },
+          { label: "Tolerância angular", value: "—", className: "" },
+          { label: "Fechamento linear", value: "—", className: "" },
+          { label: "Tolerância linear", value: "—", className: "" },
+        ]);
+        emptyStateEl.innerHTML = `<strong>Não foi possível calcular.</strong><br>${error.message}`;
+      }
+    }
+
+    function loadClassExample() {
+      $("nVertices").value = 4;
+      $("azPartida").value = "100°";
+      $("xInicial").value = 100;
+      $("yInicial").value = 100;
+      $("constB").value = 180;
+      $("constD").value = 2.20;
+      $("rotulosInput").value = "A,B,C,D";
+      buildDynamicInputs();
+
+      const exampleAngles = ["76°33'", "113°03'", "54°05'", "116°16'"];
+      const exampleDistances = [113.37, 119.22, 145.10, 79.56];
+
+      exampleAngles.forEach((value, i) => { $("angle_" + i).value = value; });
+      exampleDistances.forEach((value, i) => { $("dist_" + i).value = value; });
+      calculateAndRender();
+    }
+
+    $("btnGerar").addEventListener("click", buildDynamicInputs);
+    $("btnCalcular").addEventListener("click", calculateAndRender);
+    $("btnExemplo").addEventListener("click", loadClassExample);
+    $("btnCsv").addEventListener("click", exportCsv);
+    nVerticesEl.addEventListener("change", buildDynamicInputs);
+
+    buildDynamicInputs();
+    loadClassExample();
+  </script>
+</body>
+</html>
