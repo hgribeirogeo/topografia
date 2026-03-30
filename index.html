@@ -468,6 +468,10 @@
               <input id="nVertices" type="number" min="3" max="50" step="1" value="4" />
             </div>
             <div class="field">
+              <label for="nIrradiacoes">Irradiações (I)</label>
+              <input id="nIrradiacoes" type="number" min="0" max="200" step="1" value="0" />
+            </div>
+            <div class="field">
               <label for="azPartida">Azimute de partida</label>
               <input id="azPartida" type="text" value="100°" placeholder="Ex.: 100° ou 100 00 00" />
             </div>
@@ -498,6 +502,7 @@
           </div>
 
           <div id="dynamicInputs" class="dynamic-grid"></div>
+          <div id="irradiationInputs" class="section" style="margin-top:16px;"></div>
 
           <div class="actions">
             <button class="btn-primary" id="btnCalcular">Calcular</button>
@@ -509,7 +514,8 @@
           <div class="notes">
             Formatos aceitos para ângulos e azimutes: <strong>graus decimais</strong> ou <strong>G M S</strong>.<br />
             Exemplos válidos: <code class="inline">76°33'</code>, <code class="inline">76 33 45</code>, <code class="inline">76.5625</code>.<br />
-            Convenção adotada na página: <code class="inline">Azᵢ₊₁ = Azᵢ + AHcorr - 180°</code>, com normalização para 0°–360°.
+            Convenção adotada na página: <code class="inline">Azᵢ₊₁ = Azᵢ + AHcorr - 180°</code>, com normalização para 0°–360°.<br />
+            Para irradiações, não há correções: o cálculo usa o ponto-base informado, o ângulo da irradiação e a distância medida.
           </div>
         </div>
       </aside>
@@ -543,6 +549,7 @@
 
     const nVerticesEl = $("nVertices");
     const dynamicInputsEl = $("dynamicInputs");
+    const irradiationInputsEl = $("irradiationInputs");
     const resultsContentEl = $("resultsContent");
     const emptyStateEl = $("emptyState");
     const statusGridEl = $("statusGrid");
@@ -650,7 +657,9 @@
 
     function buildDynamicInputs() {
       const n = Math.max(3, Math.min(50, Number(nVerticesEl.value) || 4));
+      const iCount = Math.max(0, Math.min(200, Number($("nIrradiacoes").value) || 0));
       nVerticesEl.value = n;
+      $("nIrradiacoes").value = iCount;
 
       const currentLabels = getLabels(n);
       const angleInputs = [];
@@ -689,6 +698,54 @@
           </div>
         </div>
       `;
+
+      const options = currentLabels.map(label => `<option value="${label}">${label}</option>`).join("");
+      if (iCount === 0) {
+        irradiationInputsEl.innerHTML = `
+          <div class="mini-card">
+            <h4>Irradiações</h4>
+            <div class="help">Nenhuma irradiação informada.</div>
+          </div>
+        `;
+        return;
+      }
+
+      const irradiationRows = [];
+      for (let i = 0; i < iCount; i += 1) {
+        irradiationRows.push(`
+          <div class="mini-card">
+            <h4>Irradiação ${i + 1}</h4>
+            <div class="mini-list">
+              <div class="field">
+                <label for="irr_name_${i}">Nome da irradiação</label>
+                <input id="irr_name_${i}" type="text" placeholder="Ex.: Ib1, I2, P2_I1" />
+              </div>
+              <div class="field">
+                <label for="irr_from_${i}">Ponto irradiado (origem)</label>
+                <select id="irr_from_${i}">${options}</select>
+              </div>
+              <div class="field">
+                <label for="irr_angle_${i}">Ângulo da irradiação</label>
+                <input id="irr_angle_${i}" type="text" placeholder="Ex.: 25°30'" />
+              </div>
+              <div class="field">
+                <label for="irr_dist_${i}">Distância da irradiação</label>
+                <input id="irr_dist_${i}" type="number" step="any" min="0" placeholder="Ex.: 35.20" />
+              </div>
+            </div>
+          </div>
+        `);
+      }
+
+      irradiationInputsEl.innerHTML = `
+        <div class="section-title">
+          <h3>Irradiações</h3>
+          <span>Defina origem, ângulo e distância de cada irradiação</span>
+        </div>
+        <div class="dynamic-grid">
+          ${irradiationRows.join("")}
+        </div>
+      `;
     }
 
     function setStatusCards(items) {
@@ -705,6 +762,7 @@
       const labels = getLabels(n);
       const angles = [];
       const distances = [];
+      const iCount = Math.max(0, Number($("nIrradiacoes").value) || 0);
 
       for (let i = 0; i < n; i += 1) {
         const angleValue = parseAngle($("angle_" + i).value);
@@ -719,6 +777,27 @@
         }
         angles.push(angleValue);
         distances.push(distanceValue);
+      }
+
+      const irradiations = [];
+      for (let i = 0; i < iCount; i += 1) {
+        const from = $("irr_from_" + i).value;
+        const angle = parseAngle($("irr_angle_" + i).value);
+        const distance = Number(String($("irr_dist_" + i).value).replace(/,/g, "."));
+        const providedName = $("irr_name_" + i).value.trim();
+        const name = providedName || `I${i + 1}`;
+
+        if (!labels.includes(from)) {
+          throw new Error(`Origem inválida na irradiação ${name}.`);
+        }
+        if (!Number.isFinite(angle)) {
+          throw new Error(`Ângulo inválido na irradiação ${name}.`);
+        }
+        if (!Number.isFinite(distance) || distance <= 0) {
+          throw new Error(`Distância inválida na irradiação ${name}.`);
+        }
+
+        irradiations.push({ name, from, angle, distance });
       }
 
       const azStart = parseAngle($("azPartida").value);
@@ -737,6 +816,7 @@
         labels,
         angles,
         distances,
+        irradiations,
         azStart: normalize360(azStart),
         x0,
         y0,
@@ -746,7 +826,7 @@
     }
 
     function computeTraverse(data) {
-      const { n, labels, angles, distances, azStart, x0, y0, bArcsec, dLinear } = data;
+      const { n, labels, angles, distances, azStart, x0, y0, bArcsec, dLinear, irradiations } = data;
 
       const theoreticalAngle = (n - 2) * 180;
       const sumMeasuredAngles = angles.reduce((acc, v) => acc + v, 0);
@@ -819,14 +899,12 @@
       const rows = distances.map((dist, i) => {
         const start = labels[i];
         const end = labels[(i + 1) % n];
-        const angleVertex = labels[i];
         const startPoint = i === 0 ? pointCoords[0] : pointCoords[i];
         const endPoint = i === n - 1 ? { label: labels[0], x: closedCheck.x, y: closedCheck.y } : pointCoords[i + 1];
-
         return {
           index: i + 1,
           segment: `${start}-${end}`,
-          angleVertex,
+          angleVertex: labels[i],
           measuredAngle: angles[i],
           correctedAngle: correctedAngles[i],
           angleCorrection: angleCorrectionEach,
@@ -842,6 +920,33 @@
           yStart: startPoint.y,
           xEnd: endPoint.x,
           yEnd: endPoint.y,
+        };
+      });
+
+      const pointMap = new Map(pointCoords.map(p => [p.label, p]));
+      const irradiationRows = irradiations.map((irr, idx) => {
+        const baseIndex = labels.indexOf(irr.from);
+        const baseAz = baseIndex >= 0 ? azimuths[baseIndex] : NaN;
+        const azimuth = normalize360(baseAz + irr.angle - 180);
+        const basePoint = pointMap.get(irr.from);
+        const dx = irr.distance * Math.sin(toRadians(azimuth));
+        const dy = irr.distance * Math.cos(toRadians(azimuth));
+        const x = basePoint.x + dx;
+        const y = basePoint.y + dy;
+        return {
+          index: idx + 1,
+          name: irr.name,
+          from: irr.from,
+          baseAzimuth: baseAz,
+          angle: irr.angle,
+          azimuth,
+          distance: irr.distance,
+          dx,
+          dy,
+          xBase: basePoint.x,
+          yBase: basePoint.y,
+          x,
+          y,
         };
       });
 
@@ -880,6 +985,7 @@
         pointCoords,
         closedCheck,
         rows,
+        irradiationRows,
       };
     }
 
@@ -1068,6 +1174,49 @@
 
         <div class="section">
           <div class="section-title">
+            <h3>Irradiações calculadas</h3>
+            <span>Pontos irradiados sem correções</span>
+          </div>
+          <div class="table-wrap">
+            <table style="min-width: 860px;">
+              <thead>
+                <tr>
+                  <th>#</th>
+                  <th>Nome</th>
+                  <th>Origem</th>
+                  <th>Azimute base</th>
+                  <th>Ângulo da irradiação</th>
+                  <th>Azimute final</th>
+                  <th>Distância</th>
+                  <th>ΔX</th>
+                  <th>ΔY</th>
+                  <th>X</th>
+                  <th>Y</th>
+                </tr>
+              </thead>
+              <tbody>
+                ${computation.irradiationRows.length ? computation.irradiationRows.map(row => `
+                  <tr>
+                    <td>${row.index}</td>
+                    <td>${row.name}</td>
+                    <td>${row.from}</td>
+                    <td>${formatDMS(row.baseAzimuth)}</td>
+                    <td>${formatDMS(row.angle)}</td>
+                    <td>${formatDMS(row.azimuth)}</td>
+                    <td>${formatNumber(row.distance, 3)}</td>
+                    <td>${formatNumber(row.dx, 3)}</td>
+                    <td>${formatNumber(row.dy, 3)}</td>
+                    <td>${formatNumber(row.x, 3)}</td>
+                    <td>${formatNumber(row.y, 3)}</td>
+                  </tr>
+                `).join("") : `<tr><td colspan="11">Nenhuma irradiação informada.</td></tr>`}
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <div class="section">
+          <div class="section-title">
             <h3>Gráfico cartesiano</h3>
             <span>Poligonal com coordenadas absolutas corrigidas</span>
           </div>
@@ -1091,9 +1240,10 @@
       const svg = $("plotSvg");
       if (!svg) return;
 
-      const points = [...computation.pointCoords, { ...computation.pointCoords[0] }];
-      const xs = points.map(p => p.x);
-      const ys = points.map(p => p.y);
+      const polyPoints = [...computation.pointCoords, { ...computation.pointCoords[0] }];
+      const allPoints = [...polyPoints, ...computation.irradiationRows.map(r => ({ label: r.name, x: r.x, y: r.y, isIrr: true }))];
+      const xs = allPoints.map(p => p.x);
+      const ys = allPoints.map(p => p.y);
       const minX = Math.min(...xs);
       const maxX = Math.max(...xs);
       const minY = Math.min(...ys);
@@ -1127,7 +1277,6 @@
         const ty = margin + (i / gridLines) * (height - 2 * margin);
         const xv = xMin + (i / gridLines) * (xMax - xMin);
         const yv = yMax - (i / gridLines) * (yMax - yMin);
-
         content += `<line x1="${tx}" y1="${margin}" x2="${tx}" y2="${height - margin}" stroke="rgba(148,163,184,.14)" stroke-width="1" />`;
         content += `<line x1="${margin}" y1="${ty}" x2="${width - margin}" y2="${ty}" stroke="rgba(148,163,184,.14)" stroke-width="1" />`;
         content += `<text x="${tx}" y="${height - margin + 24}" fill="rgba(226,232,240,.78)" font-size="13" text-anchor="middle">${formatNumber(xv, 1)}</text>`;
@@ -1139,7 +1288,7 @@
       content += `<text x="${width - margin + 16}" y="${height - margin + 4}" fill="white" font-size="14">X</text>`;
       content += `<text x="${margin - 4}" y="${margin - 14}" fill="white" font-size="14">Y</text>`;
 
-      const polylinePoints = points.map(p => `${scaleX(p.x)},${scaleY(p.y)}`).join(" ");
+      const polylinePoints = polyPoints.map(p => `${scaleX(p.x)},${scaleY(p.y)}`).join(" ");
       content += `<polyline fill="none" stroke="#38bdf8" stroke-width="3.5" points="${polylinePoints}" />`;
 
       computation.pointCoords.forEach((point, index) => {
@@ -1147,13 +1296,23 @@
         const cy = scaleY(point.y);
         content += `<circle cx="${cx}" cy="${cy}" r="6.5" fill="#22c55e" stroke="white" stroke-width="2" />`;
         content += `<text x="${cx + 12}" y="${cy - 12}" fill="white" font-size="14" font-weight="700">${point.label}</text>`;
-        content += `<text x="${cx + 12}" y="${cy + 8}" fill="rgba(226,232,240,.8)" font-size="12">(${formatNumber(point.x, 2)} ; ${formatNumber(point.y, 2)})</text>`;
         if (index < computation.pointCoords.length - 1) {
           const next = computation.pointCoords[index + 1];
           const mx = (cx + scaleX(next.x)) / 2;
           const my = (cy + scaleY(next.y)) / 2;
           content += `<text x="${mx}" y="${my - 8}" fill="#f8fafc" font-size="12" text-anchor="middle">${computation.rows[index].segment}</text>`;
         }
+      });
+
+      computation.irradiationRows.forEach((row) => {
+        const x1 = scaleX(row.xBase);
+        const y1 = scaleY(row.yBase);
+        const x2 = scaleX(row.x);
+        const y2 = scaleY(row.y);
+        content += `<line x1="${x1}" y1="${y1}" x2="${x2}" y2="${y2}" stroke="#f59e0b" stroke-width="2.2" stroke-dasharray="8 6" />`;
+        content += `<circle cx="${x2}" cy="${y2}" r="5.5" fill="#f59e0b" stroke="white" stroke-width="2" />`;
+        content += `<text x="${x2 + 10}" y="${y2 - 8}" fill="#fde68a" font-size="13" font-weight="700">${row.name}</text>`;
+        content += `<text x="${x2 + 10}" y="${y2 + 9}" fill="rgba(254,240,138,.92)" font-size="11">origem ${row.from}</text>`;
       });
 
       svg.innerHTML = content;
@@ -1207,6 +1366,8 @@
 
       const pointHeader = ["ponto", "x", "y"];
       const pointRows = lastComputation.pointCoords.map(p => [p.label, p.x, p.y]);
+      const irrHeader = ["indice", "nome", "origem", "azimute_base", "angulo", "azimute_final", "distancia", "dx", "dy", "x", "y"];
+      const irrRows = lastComputation.irradiationRows.map(r => [r.index, r.name, r.from, r.baseAzimuth, r.angle, r.azimuth, r.distance, r.dx, r.dy, r.x, r.y]);
 
       const csvLines = [];
       csvLines.push("Planilha final");
@@ -1216,6 +1377,10 @@
       csvLines.push("Coordenadas absolutas");
       csvLines.push(pointHeader.join(";"));
       pointRows.forEach(r => csvLines.push(r.join(";")));
+      csvLines.push("");
+      csvLines.push("Irradiacoes");
+      csvLines.push(irrHeader.join(";"));
+      irrRows.forEach(r => csvLines.push(r.join(";")));
 
       const blob = new Blob([csvLines.join("\n")], { type: "text/csv;charset=utf-8;" });
       const url = URL.createObjectURL(blob);
@@ -1250,6 +1415,7 @@
 
     function loadClassExample() {
       $("nVertices").value = 4;
+      $("nIrradiacoes").value = 3;
       $("azPartida").value = "100°";
       $("xInicial").value = 100;
       $("yInicial").value = 100;
@@ -1260,9 +1426,20 @@
 
       const exampleAngles = ["76°33'", "113°03'", "54°05'", "116°16'"];
       const exampleDistances = [113.37, 119.22, 145.10, 79.56];
-
       exampleAngles.forEach((value, i) => { $("angle_" + i).value = value; });
       exampleDistances.forEach((value, i) => { $("dist_" + i).value = value; });
+
+      const irrExample = [
+        { name: "Ib1", from: "B", angle: "25°00'", dist: 38.5 },
+        { name: "Ib2", from: "B", angle: "62°30'", dist: 24.8 },
+        { name: "Id1", from: "D", angle: "40°15'", dist: 31.2 },
+      ];
+      irrExample.forEach((irr, i) => {
+        $("irr_name_" + i).value = irr.name;
+        $("irr_from_" + i).value = irr.from;
+        $("irr_angle_" + i).value = irr.angle;
+        $("irr_dist_" + i).value = irr.dist;
+      });
       calculateAndRender();
     }
 
@@ -1271,6 +1448,7 @@
     $("btnExemplo").addEventListener("click", loadClassExample);
     $("btnCsv").addEventListener("click", exportCsv);
     nVerticesEl.addEventListener("change", buildDynamicInputs);
+    $("nIrradiacoes").addEventListener("change", buildDynamicInputs);
 
     buildDynamicInputs();
     loadClassExample();
