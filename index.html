@@ -317,7 +317,7 @@ code{background:var(--surface2);padding:2px 6px;border-radius:5px;font-size:.83e
       <div id="dynIrr"></div>
 
       <div class="btn-row">
-        <button class="btn btn-green" onclick="calculateAndRender()">⚙️ Calcular</button>
+        <button class="btn btn-green" id="calcBtn">⚙️ Calcular</button>
         <button class="btn btn-ghost" onclick="buildDynamic()">Atualizar campos</button>
         <button class="btn btn-ghost" onclick="loadExample()">Exemplo da aula</button>
         <button class="btn btn-amber" onclick="exportCsv()">⬇ CSV</button>
@@ -425,7 +425,7 @@ function parseAngle(v) {
   const raw = String(v ?? '').trim();
   if (!raw) return NaN;
   const n = raw
-    .replace(/[°º]/g,' ').replace(/[′'`]/g,' ').replace(/[″"]/g,' ')
+    .replace(/[°º]/g,' ').replace(/[′’‘'`´]/g,' ').replace(/[″”“"]/g,' ')
     .replace(/,/g,'.').replace(/\s+/g,' ').trim();
   const p = n.split(' ').filter(Boolean);
   if (!p.length) return NaN;
@@ -537,12 +537,14 @@ function readInputs() {
   const irr=[];
   for(let i=0;i<iCount;i++){
     const nm = document.getElementById('irr_nm_'+i)?.value.trim()||`I${i+1}`;
-    const or = document.getElementById('irr_or_'+i)?.value;
+    const orEl = document.getElementById('irr_or_'+i);
+    const or = orEl?.value;
+    const back = orEl?.dataset?.backLabel || '';
     const an = parseAngle(document.getElementById('irr_an_'+i)?.value);
     const ds = Number(String(document.getElementById('irr_ds_'+i)?.value||'').replace(/,/g,'.'));
     if(!isFinite(an)) throw new Error(`Ângulo inválido na irradiação ${nm}`);
     if(!isFinite(ds)||ds<=0) throw new Error(`Distância inválida na irradiação ${nm}`);
-    irr.push({name:nm,from:or,angle:an,distance:ds});
+    irr.push({name:nm,from:or,back,angle:an,distance:ds});
   }
   const az  = parseAngle(document.getElementById('azPartida').value);
   const x0  = Number(String(document.getElementById('xIni').value).replace(/,/g,'.'));
@@ -557,7 +559,7 @@ function readInputs() {
 }
 
 /* ═══════════════════════════════════════════════════════════════
-   MOTOR DE CÁLCULO (fidelidade total ao original)
+   MOTOR DE CÁLCULO
 ═══════════════════════════════════════════════════════════════ */
 function computeTraverse(data) {
   const {n,labels,angles,dists,az,x0,y0,bArc,dLin,irr} = data;
@@ -610,14 +612,23 @@ function computeTraverse(data) {
   }));
 
   const ptMap = new Map(pts.map(p=>[p.label,p]));
+  function azBetween(fromLabel,toLabel){
+    for(let i=0;i<n;i++){
+      const a=labels[i], b=labels[(i+1)%n];
+      if(a===fromLabel && b===toLabel) return azimuths[i];
+      if(a===toLabel && b===fromLabel) return norm360(azimuths[i]+180);
+    }
+    return NaN;
+  }
   const irrRows = irr.map((ir,idx)=>{
     const bi = labels.indexOf(ir.from);
     const bAz = bi>=0?azimuths[bi]:NaN;
-    const fAz = norm360(bAz+ir.angle-180);
+    const backAz = ir.back ? azBetween(ir.from,ir.back) : NaN;
+    const fAz = isFinite(backAz) ? norm360(backAz+ir.angle) : norm360(bAz+ir.angle-180);
     const bp  = ptMap.get(ir.from)||{x:x0,y:y0};
     const dx  = ir.distance*Math.sin(toRad(fAz));
     const dy  = ir.distance*Math.cos(toRad(fAz));
-    return {idx:idx+1,...ir,bAz,fAz,dx,dy,xb:bp.x,yb:bp.y,x:bp.x+dx,y:bp.y+dy};
+    return {idx:idx+1,...ir,bAz,backAz,fAz,dx,dy,xb:bp.x,yb:bp.y,x:bp.x+dx,y:bp.y+dy};
   });
 
   return {
@@ -694,11 +705,8 @@ function renderResults(C) {
       </tr></thead>
       <tbody>${C.rows.map(r=>`<tr>
         <td>${r.i}</td><td><strong>${r.seg}</strong></td>
-        <td>${fDMS(r.angMeas)}</td>
-        <td>${fDMS(r.angCorrEach,{signed:true,sd:2})}</td>
-        <td>${fDMS(r.angCorr)}</td>
-        <td>${fNum(r.dist,3)}</td>
-        <td>${fDMS(r.az)}</td>
+        <td>${fDMS(r.angMeas)}</td><td>${fDMS(r.angCorrEach,{signed:true,sd:2})}</td><td>${fDMS(r.angCorr)}</td>
+        <td>${fNum(r.dist,3)}</td><td>${fDMS(r.az)}</td>
         <td>${fNum(r.rawDx,4)}</td><td>${fNum(r.rawDy,4)}</td>
         <td>${fNum(r.cx,5)}</td><td>${fNum(r.cy,5)}</td>
         <td>${fNum(r.cdx,4)}</td><td>${fNum(r.cdy,4)}</td>
@@ -713,7 +721,7 @@ function renderResults(C) {
     <div class="tbl-wrap" style="max-width:320px;">
     <table>
       <thead><tr><th>Ponto</th><th>X</th><th>Y</th></tr></thead>
-      <tbody>${C.pts.map(p=>`<tr><td><strong>${p.label}</strong></td><td>${fNum(p.x,3)}</td><td>${fNum(p.y,3)}</td></tr>`).join('')}</tbody>
+      <tbody>${C.pts.map(p=>`<tr><td><strong>${p.label}</strong></td><td>${fNum(p.x,3)}</td><td>${fNum(p.y,3)}</td>`).join('')}</tbody>
     </table></div>
   </div>
 
@@ -861,11 +869,7 @@ function buildStudentValuesTables(C) {
   document.getElementById('svTables').innerHTML = html;
 }
 
-/* ═══════════════════════════════════════════════════════════════
-   PREENCHER VALORES DO ALUNO A PARTIR DO EXTRATOR
-═══════════════════════════════════════════════════════════════ */
 function fillStudentValues(sv) {
-  // sv = { corrAngles:[], azimuths:[], pxArr:[], pyArr:[], coords:[], angErr, linErr }
   const C = lastComp;
   if(!C) return;
   const n = C.n;
@@ -873,7 +877,7 @@ function fillStudentValues(sv) {
     const el=document.getElementById('sv_cang_'+i);
     if(el&&v!==null){ el.value=fDMS(v); el.classList.add('extracted'); }
   });
-  if(sv.azimuths) sv.azimuths.forEach((v,i)=>{
+  if(sv.azimutes) sv.azimutes.forEach((v,i)=>{
     const el=document.getElementById('sv_az_'+i);
     if(el&&v!==null){ el.value=fDMS(v); el.classList.add('extracted'); }
   });
@@ -911,22 +915,40 @@ function clearStudentValues() {
 /* ═══════════════════════════════════════════════════════════════
    GERAR RELATÓRIO DE INCONSISTÊNCIAS
 ═══════════════════════════════════════════════════════════════ */
+function parseFlexibleNumber(raw) {
+  let s=String(raw??'').trim();
+  if(!s) return NaN;
+  s=s.replace(/\s+/g,'');
+  if(s.includes(',') && s.includes('.')) s=s.replace(/\./g,'').replace(',','.');
+  else if(s.includes(',')) s=s.replace(',','.');
+  return parseFloat(s);
+}
+
 function getStudentAngle(id) {
   const el=document.getElementById(id);
   if(!el||!el.value.trim()) return null;
   return parseAngle(el.value);
 }
-function getStudentNum(id) {
-  const el=document.getElementById(id);
-  if(!el||!el.value.trim()) return null;
-  return parseFloat(el.value.replace(/\./g,'').replace(',','.'));
-}
 function getStudentNumRaw(id) {
   const el=document.getElementById(id);
   if(!el||!el.value.trim()) return null;
-  // aceita tanto ponto quanto vírgula decimal
   const v = el.value.trim().replace(/[°'"″]/g,'').trim();
-  return parseFloat(v.replace(',','.'));
+  return parseFlexibleNumber(v);
+}
+function getStudentArcsec(id) {
+  const el=document.getElementById(id);
+  if(!el||!el.value.trim()) return null;
+  const raw=el.value.trim();
+  if(/[°º'′"″]/.test(raw)){
+    const a=parseAngle(raw);
+    return isFinite(a)?Math.abs(a)*3600:null;
+  }
+  const parts=raw.replace(/,/g,'.').split(/\s+/).filter(Boolean);
+  if(parts.length>=3 && parts.slice(0,3).every(x=>isFinite(Number(x)))){
+    return Math.abs(parseAngle(parts.slice(0,3).join(' ')))*3600;
+  }
+  const v=parseFlexibleNumber(raw);
+  return isFinite(v)?v:null;
 }
 
 let reportItems = [];
@@ -938,10 +960,10 @@ function generateReport() {
 
   reportItems = [];
   function push(label, svVal, calcVal, type) {
-    if(svVal===null) return; // não preenchido: pular
+    if(svVal===null) return;
     let diff, diffStr, sev;
     if(type==='angle'){
-      diff = (svVal-calcVal)*3600; // arc-sec
+      diff = (svVal-calcVal)*3600;
       const absDiff=Math.abs(diff);
       diffStr=(diff>=0?'+':'')+diff.toFixed(1)+'″';
       sev = absDiff<=2?'ok': absDiff<=60?'warn':'err';
@@ -954,20 +976,15 @@ function generateReport() {
     reportItems.push({label, svVal, calcVal, diff, diffStr, sev, type});
   }
 
-  // Ângulos corrigidos
   labels.forEach((l,i)=>{
     const v=getStudentAngle('sv_cang_'+i);
     push(`Ângulo corrigido em ${l}`, v, corrAngles[i], 'angle');
   });
-
-  // Azimutes
   labels.forEach((l,i)=>{
     const seg=`${l}-${labels[(i+1)%n]}`;
     const v=getStudentAngle('sv_az_'+i);
     push(`Azimute ${seg}`, v, azimuths[i], 'angle');
   });
-
-  // Projeções brutas
   labels.forEach((l,i)=>{
     const seg=`${l}-${labels[(i+1)%n]}`;
     const vx=getStudentNumRaw('sv_px_'+i);
@@ -975,17 +992,13 @@ function generateReport() {
     push(`PX bruto ${seg}`, vx, rawP[i].dx, 'dist');
     push(`PY bruto ${seg}`, vy, rawP[i].dy, 'dist');
   });
-
-  // Coordenadas
   pts.forEach(p=>{
     const vx=getStudentNumRaw('sv_cx_'+p.label);
     const vy=getStudentNumRaw('sv_cy_'+p.label);
     push(`Coordenada X do ponto ${p.label}`, vx, p.x, 'dist');
     push(`Coordenada Y do ponto ${p.label}`, vy, p.y, 'dist');
   });
-
-  // Fechamentos
-  const svAngErr=getStudentNumRaw('sv_ang_err');
+  const svAngErr=getStudentArcsec('sv_ang_err');
   if(svAngErr!==null){ const d=svAngErr-Math.abs(angErr)*3600; reportItems.push({label:'Erro angular declarado',svVal:svAngErr,calcVal:Math.abs(angErr)*3600,diff:d,diffStr:(d>=0?'+':'')+d.toFixed(1)+'″',sev:Math.abs(d)<=2?'ok':Math.abs(d)<=60?'warn':'err',type:'angErr'}); }
   const svLinErr=getStudentNumRaw('sv_lin_err');
   if(svLinErr!==null){ const d=svLinErr-linE; reportItems.push({label:'Erro linear declarado',svVal:svLinErr,calcVal:linE,diff:d,diffStr:(d>=0?'+':'')+d.toFixed(4)+' m',sev:Math.abs(d)<=0.005?'ok':Math.abs(d)<=0.05?'warn':'err',type:'dist'}); }
@@ -995,7 +1008,6 @@ function generateReport() {
   if(svRy!==null) push('Y de retorno',svRy,closed.y,'dist');
 
   if(!reportItems.length){ alert('Nenhum valor do aluno preenchido. Preencha ao menos um campo.'); return; }
-
   renderReport();
 }
 
@@ -1011,13 +1023,17 @@ function renderReport() {
 
   const ico = {err:'❌',warn:'⚠️',ok:'✅'};
   const cls = {err:'sev-err',warn:'sev-warn',ok:'sev-ok'};
-  const typeLabel = type => type==='angle'||type==='angErr'?'ângulo':'metros';
+  const fmtReportVal = (it,val) => {
+    if(it.type==='angErr') return `${fNum(val,2)}″ (${fDMS(val/3600)})`;
+    if(it.type==='angle') return fDMS(val)+` (${fNum(val,6)}°)`;
+    return fNum(val,5)+' m';
+  };
 
   let listHtml='';
   const ordered=[...errs,...warns,...oks];
   ordered.forEach(it=>{
-    const calcStr = (it.type==='angle'||it.type==='angErr') ? fDMS(it.calcVal)+` (${fNum(it.calcVal,6)}°)` : fNum(it.calcVal,5)+' m';
-    const svStr   = (it.type==='angle'||it.type==='angErr') ? (() => { try{ return fDMS(it.svVal)+` (${fNum(it.svVal,6)}°)`; }catch(e){return String(it.svVal);} })() : fNum(it.svVal,5)+' m';
+    const calcStr = fmtReportVal(it,it.calcVal);
+    const svStr   = fmtReportVal(it,it.svVal);
     listHtml+=`<div class="incon-item ${cls[it.sev]}">
       <span class="incon-ico">${ico[it.sev]}</span>
       <div class="incon-body">
@@ -1032,7 +1048,6 @@ function renderReport() {
   });
   document.getElementById('inconList').innerHTML=listHtml;
 
-  // Gerar Considerações
   let cons='Considerações:\n\n';
   if(errs.length===0&&warns.length===0){
     cons+='Os cálculos conferidos estão corretos e dentro da tolerância.\n';
@@ -1040,8 +1055,8 @@ function renderReport() {
     if(errs.length>0){
       cons+='Foram identificados os seguintes erros de cálculo:\n\n';
       errs.forEach(e=>{
-        const cv=(e.type==='angle'||e.type==='angErr')?fDMS(e.calcVal):fNum(e.calcVal,4)+' m';
-        const sv=(e.type==='angle'||e.type==='angErr')?fDMS(e.svVal):fNum(e.svVal,4)+' m';
+        const cv=e.type==='angErr'?`${fNum(e.calcVal,2)}″ (${fDMS(e.calcVal/3600)})`:(e.type==='angle'?fDMS(e.calcVal):fNum(e.calcVal,4)+' m');
+        const sv=e.type==='angErr'?`${fNum(e.svVal,2)}″ (${fDMS(e.svVal/3600)})`:(e.type==='angle'?fDMS(e.svVal):fNum(e.svVal,4)+' m');
         cons+=`• ${e.label}: o valor apresentado foi ${sv}, porém o correto é ${cv} (diferença de ${e.diffStr}).\n`;
       });
     }
@@ -1049,8 +1064,8 @@ function renderReport() {
       if(errs.length>0) cons+='\n';
       cons+='Pontos que merecem atenção (divergências menores):\n\n';
       warns.forEach(w=>{
-        const cv=(w.type==='angle'||w.type==='angErr')?fDMS(w.calcVal):fNum(w.calcVal,4)+' m';
-        const sv=(w.type==='angle'||w.type==='angErr')?fDMS(w.svVal):fNum(w.svVal,4)+' m';
+        const cv=w.type==='angErr'?`${fNum(w.calcVal,2)}″ (${fDMS(w.calcVal/3600)})`:(w.type==='angle'?fDMS(w.calcVal):fNum(w.calcVal,4)+' m');
+        const sv=w.type==='angErr'?`${fNum(w.svVal,2)}″ (${fDMS(w.svVal/3600)})`:(w.type==='angle'?fDMS(w.svVal):fNum(w.svVal,4)+' m');
         cons+=`• ${w.label}: declarado ${sv}, esperado ${cv} (diferença de ${w.diffStr}).\n`;
       });
     }
@@ -1076,7 +1091,7 @@ function exportReport() {
 }
 
 /* ═══════════════════════════════════════════════════════════════
-   CALCULAR E RENDERIZAR
+   CALCULAR E RENDERIZAR (hooked para valores do PDF)
 ═══════════════════════════════════════════════════════════════ */
 function calculateAndRender() {
   try {
@@ -1095,6 +1110,11 @@ function calculateAndRender() {
     document.getElementById('reportPanel').style.display='none';
     setStep(3);
     document.getElementById('panel-resultado').scrollIntoView({behavior:'smooth'});
+    
+    if(window._pendingSV && lastComp){
+      fillStudentValues(window._pendingSV);
+      window._pendingSV = null;
+    }
   } catch(err) {
     setStats([
       {label:'Erro',value:err.message,cls:'c-red'},{label:'—',value:'—'},{label:'—',value:'—'},{label:'—',value:'—'}
@@ -1104,9 +1124,6 @@ function calculateAndRender() {
   }
 }
 
-/* ═══════════════════════════════════════════════════════════════
-   EXPORTAR CSV
-═══════════════════════════════════════════════════════════════ */
 function exportCsv() {
   if(!lastComp){alert('Calcule primeiro.');return;}
   const C=lastComp;
@@ -1118,9 +1135,6 @@ function exportCsv() {
   document.body.appendChild(a);a.click();document.body.removeChild(a);
 }
 
-/* ═══════════════════════════════════════════════════════════════
-   EXEMPLO DA AULA
-═══════════════════════════════════════════════════════════════ */
 function loadExample() {
   document.getElementById('nVert').value=4;
   document.getElementById('nIrr').value=3;
@@ -1158,7 +1172,7 @@ function setStep(s) {
 }
 
 /* ═══════════════════════════════════════════════════════════════
-   PDF.js EXTRAÇÃO
+   PDF.js EXTRAÇÃO (OTIMIZADA SEM TRAVAMENTO)
 ═══════════════════════════════════════════════════════════════ */
 function log(msg,cls){
   const b=document.getElementById('logBox');
@@ -1167,10 +1181,7 @@ function log(msg,cls){
   b.scrollTop=b.scrollHeight;
 }
 
-// ── Parsers específicos para T1 ──────────────────────────────
-
-const RE_DMS = /([+-]?\d{1,3})[°º]\s*(\d{2})['′]\s*(?:(\d{1,2}(?:[.,]\d+)?)\s*[""″'])?/g;
-
+const RE_DMS = /([+-]?\d{1,3})\s*[°º]\s*[\s'′’‘´`]*\s*(\d{1,2})\s*['′’‘´`°º]?\s*(?:(\d{1,2}(?:[.,]\d+)?)\s*[\"″”“']*)?/g;
 function allDMS(text) {
   const r=[];
   let m;
@@ -1186,7 +1197,6 @@ function allDMS(text) {
 }
 
 function allDecimals(text) {
-  // números como 113.37 ou 113,37 (potenciais distâncias ou coordenadas)
   const re=/\b(\d{1,5})[,.](\d{2,5})\b/g;
   const r=[];
   let m;
@@ -1194,44 +1204,52 @@ function allDecimals(text) {
     const v=parseFloat(`${m[1]}.${m[2]}`);
     r.push({raw:m[0],val:v,idx:m.index});
   }
-  // dedup por raw
   const seen=new Set();
   return r.filter(x=>seen.has(x.raw)?false:(seen.add(x.raw),true));
 }
 
 function findAzimuth(text, allAngles) {
-  // 1) procura contexto explícito
-  const ctx=/(?:azimute[^\n]{0,40}?partida|az[.\s]*(?:de\s)?partida|az[.\s]*inicial)[^\n]{0,10}?(\d{1,3}[°º]\d{2}['′](?:\d{2}[""″'])?)/i;
-  const m=ctx.exec(text);
-  if(m){ const v=parseAngle(m[1]); if(isFinite(v)) return {val:v,raw:m[1],confidence:'high'}; }
-  // 2) primeiro ângulo no intervalo razoável de azimute (0-360, muito preciso)
-  const candidate=allAngles.find(a=>a.deg>=0&&a.deg<360&&a.deg!==0);
-  if(candidate) return {val:candidate.deg,raw:candidate.raw,confidence:'low'};
+  const src=String(text||'');
+  const dms = "([+-]?\\d{1,3}\\s*[°º]\\s*\\d{1,2}\\s*[\'′’‘´`°º]?\\s*(?:\\d{1,2}(?:[.,]\\d+)?\\s*(?:[\\"″”“]|\'\')?)?)";
+  const patterns=[
+    new RegExp('(?:azp|az\\s*p|azimute\\s+de\\s+partida|az[.\\s]*(?:de\\s+)?partida|az[.\\s]*inicial|az\\s*1\\s*[-–]\\s*2)[\\s\\S]{0,90}?'+dms,'i'),
+    new RegExp(dms+'[\\s\\S]{0,80}?(?:azp|az\\s*p|azimute\\s+de\\s+partida|az\\s*1\\s*[-–]\\s*2)','i')
+  ];
+  for(const re of patterns){
+    const m=re.exec(src);
+    if(m){
+      const raw=m[1];
+      const v=parseAngle(raw);
+      if(isFinite(v)) return {val:norm360(v),raw:raw.trim(),confidence:'high'};
+    }
+  }
+  const angles=allAngles||allDMS(src);
+  for(const a of angles){
+    const start=Math.max(0,a.idx-80), end=Math.min(src.length,a.idx+a.raw.length+80);
+    const ctx=src.slice(start,end).toLowerCase();
+    if(/azp|az\s*p|azimute\s+de\s+partida|az\s*1\s*[-–]\s*2|partida/.test(ctx)){
+      return {val:norm360(a.deg),raw:a.raw,confidence:'medium'};
+    }
+  }
   return null;
 }
 
 function findInputAngles(text, allAngles, n) {
-  // Procura sequência de n ângulos entre ~30° e 340° (ângulos de vértice)
-  // Filtra ângulos muito pequenos (correções) ou maiores que 360°
   const candidates = allAngles.filter(a=>a.deg>=30&&a.deg<=340);
-  // Tenta encontrar grupo de n valores consecutivos onde soma ≈ (n-2)*180
   const expected = (n-2)*180;
-  const tol = n*1; // 1° por vértice de tolerância
+  const tol = n*1;
   for(let s=0;s<=candidates.length-n;s++){
     const grp=candidates.slice(s,s+n);
     const sum=grp.reduce((a,g)=>a+g.deg,0);
     if(Math.abs(sum-expected)<=tol) return {values:grp.map(g=>g.deg),raws:grp.map(g=>g.raw),confidence:'high'};
   }
-  // Fallback: pega os primeiros n candidatos
   if(candidates.length>=n) return {values:candidates.slice(0,n).map(g=>g.deg),raws:candidates.slice(0,n).map(g=>g.raw),confidence:'low'};
   return null;
 }
 
 function findDistances(allDec, n) {
-  // Distâncias: entre 5 e 5000 m
   const candidates=allDec.filter(d=>d.val>=5&&d.val<=5000);
   if(candidates.length===n) return {values:candidates.map(d=>d.val),confidence:'high'};
-  // Tenta encontrar grupo de n com soma coerente (perímetro > 10m)
   for(let s=0;s<=candidates.length-n;s++){
     const grp=candidates.slice(s,s+n);
     const sum=grp.reduce((a,g)=>a+g.val,0);
@@ -1241,65 +1259,332 @@ function findDistances(allDec, n) {
   return null;
 }
 
-// Tenta extrair valores intermediários do aluno
+function defaultLabelsForN(n) {
+  return Array.from({length:n},(_,i)=>i<26?String.fromCharCode(65+i):`P${i+1}`);
+}
+
+function normalizeIrrNameToken(token) {
+  const raw=String(token||'').replace(/\s+/g,'').toUpperCase().replace(/^L(?=\(?\d)/,'I');
+  const num=(raw.match(/\d+/)||[])[0];
+  return num ? `I(${num})` : raw;
+}
+
+function dmsFromParts(d,m,s) {
+  const dd=Number(String(d).replace(',','.'));
+  const mm=Number(String(m||0).replace(',','.'));
+  const ss=Number(String(s||0).replace(',','.'));
+  if(![dd,mm,ss].every(isFinite)) return NaN;
+  const sign=dd<0?-1:1;
+  return sign*(Math.abs(dd)+Math.abs(mm)/60+Math.abs(ss)/3600);
+}
+
+function stationToLabel(station, labels, mainRows) {
+  const st=String(station ?? '').trim();
+  if(labels.includes(st)) return st;
+  const num=parseInt(st,10);
+  if(isFinite(num) && num>=1 && num<=labels.length) return labels[num-1];
+  const order=[...new Set((mainRows||[]).map(r=>String(r.e)))];
+  const idx=order.indexOf(st);
+  if(idx>=0 && idx<labels.length) return labels[idx];
+  return labels[0];
+}
+
+function extractTraverseREVRows(text) {
+  const compact = String(text||'').replace(/\u00A0/g,' ').replace(/\s+/g,' ').trim();
+  const rows=[];
+  const rowRe=/(?:^|\s)(\d{1,3})\s+(\d{1,3})\s+((?:[IiLl]\s*\(?\s*\d+\s*\)?)|\d{1,3})\s+([+-]?\d{1,3})\s*[°º]\s*(\d{1,2})\s*['′]\s*(\d{1,2}(?:[.,]\d+)?)\s*(?:"|″|”|')?\s+(\d{1,5}(?:[.,]\d{1,5})?)\s*(?:m\b)?/gi;
+  let m;
+  while((m=rowRe.exec(compact))!==null){
+    const vToken=String(m[3]||'').replace(/\s+/g,'').toUpperCase().replace(/^L(?=\(?\d)/,'I');
+    const angle=dmsFromParts(m[4],m[5],m[6]);
+    const dist=parseFloat(String(m[7]).replace(',','.'));
+    if(!isFinite(angle)||!isFinite(dist)) continue;
+    const row={
+      r:String(m[1]), e:String(m[2]), v:vToken,
+      angle, angleRaw:`${m[4]}° ${String(m[5]).padStart(2,'0')}' ${String(m[6]).padStart(2,'0')}"`,
+      distance:dist, distanceRaw:m[7],
+      isIrr:/^I/.test(vToken)
+    };
+    if(row.isIrr) row.name=normalizeIrrNameToken(vToken);
+    rows.push(row);
+  }
+  const mainRows=rows.filter(r=>!r.isIrr && /^\d+$/.test(r.v));
+  const irrRows=rows.filter(r=>r.isIrr);
+  return {rows,mainRows,irrRows};
+}
+
+function applyTraverseREVExtraction(tableData) {
+  if(!tableData || tableData.mainRows.length<3) return null;
+  const nDetected=tableData.mainRows.length;
+  document.getElementById('nVert').value=nDetected;
+  document.getElementById('nIrr').value=tableData.irrRows.length;
+  const rawLabels=document.getElementById('labels').value.trim();
+  const labelList=rawLabels.split(',').map(x=>x.trim()).filter(Boolean);
+  if(labelList.length!==nDetected) {
+    document.getElementById('labels').value=defaultLabelsForN(nDetected).join(',');
+  }
+  buildDynamic();
+  const labels=getLabels();
+  tableData.mainRows.forEach((row,i)=>{
+    const angEl=document.getElementById('ang_'+i);
+    const dstEl=document.getElementById('dst_'+i);
+    if(angEl){ angEl.value=row.angleRaw; angEl.classList.add('extracted'); }
+    if(dstEl){ dstEl.value=row.distance; dstEl.classList.add('extracted'); }
+  });
+  tableData.irrRows.forEach((row,i)=>{
+    const nmEl=document.getElementById('irr_nm_'+i);
+    const orEl=document.getElementById('irr_or_'+i);
+    const anEl=document.getElementById('irr_an_'+i);
+    const dsEl=document.getElementById('irr_ds_'+i);
+    const fromLabel=stationToLabel(row.e,labels,tableData.mainRows);
+    const backLabel=stationToLabel(row.r,labels,tableData.mainRows);
+    if(nmEl){ nmEl.value=row.name||`I(${i+1})`; nmEl.classList.add('extracted'); }
+    if(orEl){ orEl.value=fromLabel; orEl.dataset.backLabel=backLabel; orEl.classList.add('extracted'); }
+    if(anEl){ anEl.value=row.angleRaw; anEl.classList.add('extracted'); }
+    if(dsEl){ dsEl.value=row.distance; dsEl.classList.add('extracted'); }
+  });
+  return {
+    n:nDetected,
+    labels,
+    angles:tableData.mainRows.map(r=>r.angle),
+    angleRaws:tableData.mainRows.map(r=>r.angleRaw),
+    distances:tableData.mainRows.map(r=>r.distance),
+    irradiations:tableData.irrRows
+  };
+}
+
+function allDecimalsInOrder(text) {
+  const re=/\b(\d{1,5})\s*[,.]\s*(\d{1,5})\b/g;
+  const r=[];
+  let m;
+  while((m=re.exec(String(text||'')))!==null){
+    const v=parseFloat(`${m[1]}.${m[2]}`);
+    if(isFinite(v)) r.push({raw:m[0],val:v,idx:m.index});
+  }
+  return r;
+}
+
+function sliceTable1Block(text) {
+  const src=String(text||'');
+  const startMatch=/(Tabela\s*1|Tabela\s*1\s*[–—-]|dados\s+coletados)/i.exec(src);
+  if(!startMatch) return '';
+  const start=Math.max(0,startMatch.index-120);
+  const rest=src.slice(start);
+  const endMatch=/(Fonte:\s*Autores|C[áa]lculos?:|●\s*Fechamento|3\.\s*Resultados)/i.exec(rest.slice(150));
+  const end=endMatch ? 150+endMatch.index+120 : Math.min(rest.length,2200);
+  return rest.slice(0,end);
+}
+
+function inferIrrContext(text, n) {
+  const src=String(text||'');
+  let origin=null, back=null;
+  const originPatterns=[
+    /Ao\s+chegar\s+no\s+ponto\s*(\d{1,2})[\s\S]{0,450}?irradia/i,
+    /ponto\s*(\d{1,2})[\s\S]{0,220}?irradia/i,
+    /irradia[çc][õo]es?[\s\S]{0,220}?ponto\s*(\d{1,2})/i
+  ];
+  for(const re of originPatterns){
+    const m=re.exec(src);
+    if(m){ const v=parseInt(m[1],10); if(v>=1&&v<=n){ origin=String(v); break; } }
+  }
+  const backPatterns=[
+    /zerad[ao]\s+no\s+ponto\s*(\d{1,2})\s*\(\s*r[ée]/i,
+    /ponto\s*(\d{1,2})\s*\(\s*r[ée]/i,
+    /r[ée]\s*\)?\s*(?:ponto)?\s*(\d{1,2})/i
+  ];
+  for(const re of backPatterns){
+    const m=re.exec(src);
+    if(m){ const v=parseInt(m[1],10); if(v>=1&&v<=n){ back=String(v); break; } }
+  }
+  if(!origin && n>=3) origin='3';
+  if(!back && origin){
+    const oi=parseInt(origin,10);
+    if(isFinite(oi)) back=String(oi===1?n:oi-1);
+  }
+  return {origin,back};
+}
+
+function extractSequentialTable1Rows(text, nDefault, contextText) {
+  const block=sliceTable1Block(text);
+  if(!block) return null;
+  const n=Math.max(3,Math.min(20,Number(nDefault)||4));
+  const angles=allDMS(block);
+  const dists=allDecimalsInOrder(block).filter(d=>d.val>=1&&d.val<=5000);
+  if(angles.length<n || dists.length<n) return null;
+  const az=findAzimuth(block, angles);
+  let dataAngles=angles.slice();
+  if(az){
+    const idx=dataAngles.findIndex(a=>a.raw===az.raw || Math.abs(norm360(a.deg)-norm360(az.val))<1e-7);
+    if(idx>=0) dataAngles.splice(idx,1);
+  } else if(dataAngles.length>n && dataAngles[0].deg>300) {
+    dataAngles=dataAngles.slice(1);
+  }
+  if(dataAngles.length<n) return null;
+  const irrCount=Math.max(0,Math.min(50,Math.min(dataAngles.length-n,dists.length-n)));
+  const {origin,back}=inferIrrContext(`${contextText||''}\n${block}`, n);
+  const mainRows=[];
+  for(let i=0;i<n;i++){
+    const e=String(i+1);
+    const r=String(i===0?n:i);
+    const v=String(i===n-1?1:i+2);
+    const a=dataAngles[i];
+    const d=dists[i];
+    mainRows.push({
+      r,e,v,
+      angle:a.deg, angleRaw:a.raw.replace(/''/g,'"').trim(),
+      distance:d.val, distanceRaw:d.raw,
+      isIrr:false
+    });
+  }
+  const irrRows=[];
+  for(let i=0;i<irrCount;i++){
+    const a=dataAngles[n+i];
+    const d=dists[n+i];
+    irrRows.push({
+      r:back||'', e:origin||'', v:`I(${i+1})`, name:`I(${i+1})`,
+      angle:a.deg, angleRaw:a.raw.replace(/''/g,'"').trim(),
+      distance:d.val, distanceRaw:d.raw,
+      isIrr:true
+    });
+  }
+  return {rows:[...mainRows,...irrRows],mainRows,irrRows,source:'sequential-tabela-1'};
+}
+
+function pickOcrPages(textPages, numPages) {
+  const pages=[];
+  (textPages||[]).forEach((txt,i)=>{
+    if(i<12 && /(Tabela\s*1|dados\s+coletados|planim[ée]trico\s*\(tabela\s*1\))/i.test(txt||'')) pages.push(i+1);
+  });
+  if(!pages.length){
+    for(let i=1;i<=Math.min(numPages,10);i++) pages.push(i);
+  }
+  return [...new Set(pages)].slice(0,2); // no máximo 2 páginas OCR
+}
+
+function loadExternalScriptOnce(src, globalName, timeoutMs=12000) {
+  if(globalName && window[globalName]) return Promise.resolve(true);
+  const existing=[...document.scripts].find(sc=>sc.src===src);
+  if(existing && existing.dataset.loaded==='true') return Promise.resolve(true);
+  return new Promise((resolve,reject)=>{
+    const script=existing||document.createElement('script');
+    let done=false;
+    const timer=setTimeout(()=>{
+      if(done) return;
+      done=true;
+      reject(new Error('tempo excedido ao carregar biblioteca externa'));
+    }, timeoutMs);
+    script.onload=()=>{
+      if(done) return;
+      done=true;
+      clearTimeout(timer);
+      script.dataset.loaded='true';
+      resolve(true);
+    };
+    script.onerror=()=>{
+      if(done) return;
+      done=true;
+      clearTimeout(timer);
+      reject(new Error('falha ao carregar biblioteca externa'));
+    };
+    if(!existing){
+      script.src=src;
+      script.async=true;
+      document.head.appendChild(script);
+    }
+  });
+}
+
+async function ensureTesseractLoaded() {
+  if(typeof Tesseract!=='undefined') return true;
+  try{
+    log('🔎 Carregando OCR (pode levar alguns segundos)...','log-info');
+    await loadExternalScriptOnce('https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js','Tesseract',15000);
+    return typeof Tesseract!=='undefined';
+  }catch(e){
+    log(`⚠️ OCR não carregou (${e.message}). Usando apenas texto extraível.`, 'log-warn');
+    return false;
+  }
+}
+
+async function ocrPdfForTable1(pdf, textPages) {
+  const ok = await ensureTesseractLoaded();
+  if(!ok) return '';
+  const pages=pickOcrPages(textPages,pdf.numPages);
+  let out='';
+  for(const pno of pages){
+    try{
+      log(`🔎 OCR da página ${pno} (pode levar alguns instantes)...`,'log-info');
+      const pg=await pdf.getPage(pno);
+      const viewport=pg.getViewport({scale:2.0});
+      const canvas=document.createElement('canvas');
+      const ctx=canvas.getContext('2d',{willReadFrequently:true});
+      canvas.width=Math.ceil(viewport.width);
+      canvas.height=Math.ceil(viewport.height);
+      await pg.render({canvasContext:ctx,viewport}).promise;
+      const result = await Promise.race([
+        Tesseract.recognize(canvas,'eng',{tessedit_pageseg_mode:'11'}),
+        new Promise((_,reject)=>setTimeout(()=>reject(new Error('OCR timeout')),20000))
+      ]);
+      const txt=result?.data?.text||'';
+      out+=`\n\n--- OCR página ${pno} ---\n${txt}`;
+      const rev=extractTraverseREVRows(txt);
+      const seq=extractSequentialTable1Rows(txt,getN(),out);
+      if(rev.mainRows.length>=3 || (seq && seq.mainRows.length>=3)) break;
+    }catch(e){
+      log(`⚠️ OCR falhou na página ${pno}: ${e.message}`,'log-warn');
+    }
+  }
+  return out;
+}
+
 function extractStudentIntermediates(text, n, labels, inputAngles) {
   const allAng = allDMS(text);
-  const allDec = allDecimals(text);
-
-  // Remove ângulos de entrada da lista para buscar corrigidos/azimutes
   const inputSet = new Set((inputAngles||[]).map(v=>parseFloat(v.toFixed(4))));
   const remaining = allAng.filter(a=>!inputSet.has(parseFloat(a.deg.toFixed(4))));
-
-  // Ângulos corrigidos: mesma quantidade que n, próximos dos medidos + correção pequena
-  // (diferença máxima de 5° em relação aos medidos)
   let corrAngles=null, azimutes=null;
   if(inputAngles&&remaining.length>=n){
-    const corrCands=remaining.filter(a=>{
-      return inputAngles.some(ia=>Math.abs(ia-a.deg)<5);
-    });
-    if(corrCands.length>=n){
-      corrAngles=corrCands.slice(0,n).map(a=>a.deg);
-    }
-    // Azimutes: entre 0 e 360, diferentes dos corrigidos
+    const corrCands=remaining.filter(a=>inputAngles.some(ia=>Math.abs(ia-a.deg)<5));
+    if(corrCands.length>=n) corrAngles=corrCands.slice(0,n).map(a=>a.deg);
     const corrSet=new Set((corrAngles||[]).map(v=>parseFloat(v.toFixed(4))));
     const azCands=remaining.filter(a=>a.deg>=0&&a.deg<360&&!corrSet.has(parseFloat(a.deg.toFixed(4))));
     if(azCands.length>=n) azimutes=azCands.slice(0,n).map(a=>a.deg);
   }
-
-  // Projeções: decimais positivos e negativos no range de distâncias curtas (-999 a 999)
-  const projCands=allDec.filter(d=>Math.abs(d.val)<=999&&Math.abs(d.val)>=0.001);
-  // Pares px/py: espera 2n valores
-  let pxArr=null,pyArr=null;
-  if(projCands.length>=n*2){
-    pxArr=projCands.slice(0,n).map(d=>d.val);
-    pyArr=projCands.slice(n,n*2).map(d=>d.val);
-  }
-
-  // Coordenadas: pares de valores no range típico (x0±500, y0±500)
-  const coordCands=allDec.filter(d=>d.val>=0&&d.val<=99999);
-  let coords=null;
-  if(coordCands.length>=n*2){
-    coords=labels.map((_,i)=>({label:labels[i],x:coordCands[i*2]?.val??null,y:coordCands[i*2+1]?.val??null}));
-  }
-
-  // Erro angular (segundos): decimal pequeno
-  const angErrCands=allDec.filter(d=>d.val>0&&d.val<3600);
-  const angErr=angErrCands[0]?.val??null;
-
-  // Erro linear (metros): muito pequeno
-  const linErrCands=allDec.filter(d=>d.val>0&&d.val<10);
-  const linErr=linErrCands[0]?.val??null;
-
-  return {corrAngles,azimutes,pxArr,pyArr,coords,angErr,linErr};
+  const angErr= (()=>{
+    const reAng=/(?:erro\s+angular[^0-9°º]{0,40})([+-]?\d{1,3}\s*[°º]\s*\d{1,2}\s*['′]\s*\d{1,2}(?:[.,]\d+)?\s*["″]?)/i;
+    const m=reAng.exec(text);
+    if(m){
+      const a=parseAngle(m[1]);
+      if(isFinite(a)) return a*3600;
+    }
+    const reNum=/erro\s+angular[^0-9]{0,40}([+-]?\d+(?:[.,]\d+)?)/i;
+    const m2=reNum.exec(text);
+    if(m2){
+      const v=parseFlexibleNumber(m2[1]);
+      if(isFinite(v)) return v;
+    }
+    return null;
+  })();
+  const linErr= (()=>{
+    const reLin=/erro\s+linear[^0-9]{0,40}([+-]?\d+(?:[.,]\d+)?)/i;
+    const m=reLin.exec(text);
+    if(m){
+      const v=parseFlexibleNumber(m[1]);
+      if(isFinite(v)) return v;
+    }
+    return null;
+  })();
+  return {corrAngles,azimutes,pxArr:null,pyArr:null,coords:null,angErr,linErr};
 }
 
 async function extractPDF(file) {
   document.getElementById('logBox').innerHTML='';
+  document.getElementById('logBox').style.display='block';
   document.getElementById('chipsBox').style.display='none';
   document.getElementById('chips').innerHTML='';
   document.getElementById('rawText').value='';
   document.getElementById('rawText').style.display='none';
   setStep(1);
+  window._pendingSV = null;
 
   if(typeof pdfjsLib==='undefined'){
     log('❌ PDF.js não carregou. Verifique a conexão e recarregue.','log-err');
@@ -1308,37 +1593,82 @@ async function extractPDF(file) {
   pdfjsLib.GlobalWorkerOptions.workerSrc='https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
 
   try {
-    log(`📄 ${file.name}  (${(file.size/1024).toFixed(1)} KB)`);
+    log(`📄 Processando ${file.name} (${(file.size/1024).toFixed(1)} KB)...`);
     const ab = await file.arrayBuffer();
     const pdf = await pdfjsLib.getDocument({data:ab}).promise;
     log(`✅ PDF carregado — ${pdf.numPages} página(s)`, 'log-ok');
 
     let full='';
+    const pageTexts=[];
     for(let p=1;p<=pdf.numPages;p++){
       const pg = await pdf.getPage(p);
       const ct = await pg.getTextContent();
-      full += ct.items.map(i=>i.str).join(' ') + '\n';
+      const pageText = ct.items.map(i=>i.str).join(' ') + '\n';
+      pageTexts.push(pageText);
+      full += pageText;
     }
     const chars=full.replace(/\s/g,'').length;
     document.getElementById('rawText').value=full;
 
     if(chars<80){
-      log('⚠️ Pouco texto extraído. PDF pode ter tabelas como imagens.','log-warn');
-      log('   → Preencha os campos manualmente.','log-warn');
-      document.getElementById('chipsBox').style.display='block';
-      return;
+      log('⚠️ Pouco texto extraído. Tentando OCR nas páginas mais relevantes (pode demorar alguns segundos).','log-warn');
+    } else {
+      log(`✅ ${chars} caracteres extraídos.`,'log-ok');
     }
-    log(`✅ ${chars} caracteres extraídos.`,'log-ok');
 
-    const n = getN();
-    const labels = getLabels();
+    let n = getN();
+    let labels = getLabels();
     const chips = document.getElementById('chips');
     const addChip=(txt,cls)=>{ const c=document.createElement('span'); c.className='chip '+cls; c.textContent=txt; chips.appendChild(c); };
 
-    // ── Azimute de partida ──────────────────────────
-    const dmsAll = allDMS(full);
-    const decAll = allDecimals(full);
-    const azResult = findAzimuth(full, dmsAll);
+    let combinedText=full;
+    let dmsAll = allDMS(combinedText);
+    let decAll = allDecimals(combinedText);
+
+    let revTable = extractTraverseREVRows(combinedText);
+    let seqTable = null;
+    let tableApplied = null;
+    let angResult = null;
+
+    if(revTable.mainRows.length<3){
+      seqTable = extractSequentialTable1Rows(combinedText,n,combinedText);
+      if(seqTable && seqTable.mainRows.length>=3) revTable=seqTable;
+    }
+
+    if(revTable.mainRows.length<3){
+      const ocrText = await ocrPdfForTable1(pdf,pageTexts);
+      if(ocrText){
+        combinedText = `${full}\n${ocrText}`;
+        document.getElementById('rawText').value=combinedText;
+        dmsAll = allDMS(combinedText);
+        decAll = allDecimals(combinedText);
+        const ocrRev=extractTraverseREVRows(ocrText);
+        const ocrSeq=extractSequentialTable1Rows(ocrText,n,combinedText);
+        if(ocrRev.mainRows.length>=3) revTable=ocrRev;
+        else if(ocrSeq && ocrSeq.mainRows.length>=3) revTable=ocrSeq;
+      }
+    }
+
+    if(revTable.mainRows.length>=3){
+      tableApplied = applyTraverseREVExtraction(revTable);
+      if(tableApplied){
+        n = tableApplied.n;
+        labels = tableApplied.labels;
+        angResult = {
+          values:tableApplied.angles,
+          raws:tableApplied.angleRaws,
+          confidence:'high'
+        };
+        log(`✅ Tabela 1 detectada: ${revTable.mainRows.length} lados principais e ${revTable.irrRows.length} irradiação(ões).`,'log-ok');
+        addChip(`Poligonal: ${revTable.mainRows.length} lados`, 'chip-green');
+        if(revTable.irrRows.length){
+          addChip(`Irradiações: ${revTable.irrRows.length} detectada(s)`, 'chip-green');
+          log(`✅ Irradiações extraídas: ${revTable.irrRows.map(r=>`${r.name} em ${stationToLabel(r.e,labels,revTable.mainRows)} (${r.angleRaw}; ${r.distance} m)`).join(' | ')}`,'log-ok');
+        }
+      }
+    }
+
+    const azResult = findAzimuth(combinedText, dmsAll);
     if(azResult){
       log(`✅ Azimute de partida: ${azResult.raw} (${azResult.confidence})`,'log-ok');
       document.getElementById('azPartida').value=azResult.raw;
@@ -1349,57 +1679,68 @@ async function extractPDF(file) {
       addChip('Azimute: não detectado','chip-amber');
     }
 
-    // ── Ângulos observados ──────────────────────────
-    const angResult = findInputAngles(full, dmsAll, n);
-    if(angResult){
-      log(`${angResult.confidence==='high'?'✅':'⚠️'} Ângulos observados (${angResult.confidence}): ${angResult.raws.join(' | ')}`,'log-ok');
-      buildDynamic();
-      angResult.values.forEach((v,i)=>{
-        const el=document.getElementById('ang_'+i);
-        if(el){ el.value=angResult.raws[i]; el.classList.add('extracted'); }
-      });
-      addChip(`Ângulos: ${n} detectados`, angResult.confidence==='high'?'chip-green':'chip-amber');
+    if(!tableApplied){
+      angResult = findInputAngles(combinedText, dmsAll, n);
+      if(angResult){
+        log(`${angResult.confidence==='high'?'✅':'⚠️'} Ângulos observados (${angResult.confidence}): ${angResult.raws.join(' | ')}`,'log-ok');
+        buildDynamic();
+        angResult.values.forEach((v,i)=>{
+          const el=document.getElementById('ang_'+i);
+          if(el){ el.value=angResult.raws[i]; el.classList.add('extracted'); }
+        });
+        addChip(`Ângulos: ${n} detectados`, angResult.confidence==='high'?'chip-green':'chip-amber');
+      } else {
+        log(`⚠️ Não foi possível detectar ${n} ângulos de vértice. Insira manualmente.`,'log-warn');
+        addChip('Ângulos: não detectados','chip-amber');
+      }
+
+      const distResult = findDistances(decAll, n);
+      if(distResult){
+        log(`${distResult.confidence==='high'?'✅':'⚠️'} Distâncias (${distResult.confidence}): ${distResult.values.join(' | ')}`,'log-ok');
+        distResult.values.forEach((v,i)=>{
+          const el=document.getElementById('dst_'+i);
+          if(el){ el.value=v; el.classList.add('extracted'); }
+        });
+        addChip(`Distâncias: ${n} detectadas`, distResult.confidence==='high'?'chip-green':'chip-amber');
+      } else {
+        log('⚠️ Distâncias não detectadas. Insira manualmente.','log-warn');
+        addChip('Distâncias: não detectadas','chip-amber');
+      }
     } else {
-      log(`⚠️ Não foi possível detectar ${n} ângulos de vértice. Insira manualmente.`,'log-warn');
-      addChip('Ângulos: não detectados','chip-amber');
+      log(`✅ Ângulos principais: ${tableApplied.angleRaws.join(' | ')}`,'log-ok');
+      log(`✅ Distâncias principais: ${tableApplied.distances.join(' | ')}`,'log-ok');
+      addChip(`Ângulos: ${n} detectados`, 'chip-green');
+      addChip(`Distâncias: ${n} detectadas`, 'chip-green');
     }
 
-    // ── Distâncias ──────────────────────────────────
-    const distResult = findDistances(decAll, n);
-    if(distResult){
-      log(`${distResult.confidence==='high'?'✅':'⚠️'} Distâncias (${distResult.confidence}): ${distResult.values.join(' | ')}`,'log-ok');
-      distResult.values.forEach((v,i)=>{
-        const el=document.getElementById('dst_'+i);
-        if(el){ el.value=v; el.classList.add('extracted'); }
-      });
-      addChip(`Distâncias: ${n} detectadas`, distResult.confidence==='high'?'chip-green':'chip-amber');
-    } else {
-      log('⚠️ Distâncias não detectadas. Insira manualmente.','log-warn');
-      addChip('Distâncias: não detectadas','chip-amber');
-    }
-
-    // ── Valores intermediários do aluno ─────────────
     const inputAngVals = angResult?.values||null;
-    const sv = extractStudentIntermediates(full, n, labels, inputAngVals);
+    const sv = extractStudentIntermediates(combinedText, n, labels, inputAngVals);
     let svFound=0;
     if(sv.corrAngles){ svFound++; addChip('Âng. corrigidos detectados','chip-blue'); }
     if(sv.azimutes)  { svFound++; addChip('Azimutes detectados','chip-blue'); }
-    log(`ℹ️ Valores intermediários do aluno: ${svFound} grupos detectados.`,'log-info');
+    if(sv.angErr!==null){ svFound++; addChip('Erro angular detectado','chip-blue'); }
+    if(sv.linErr!==null){ svFound++; addChip('Erro linear detectado','chip-blue'); }
+    log(`ℹ️ Valores intermediários do aluno: ${svFound} grupo(s) detectado(s).`,'log-info');
 
     document.getElementById('chipsBox').style.display='block';
     setStep(2);
-    log('ℹ️ Revise os campos em verde e calcule.','log-info');
+    log('ℹ️ Revise os campos em verde e clique em Calcular.','log-info');
 
-    // Armazena para preencher após buildStudentValuesTables ser chamado
     window._pendingSV = sv;
-
+    setTimeout(()=>{
+      if(window._pendingSV && lastComp){
+        fillStudentValues(window._pendingSV);
+        window._pendingSV = null;
+      }
+    },100);
   } catch(err) {
     log(`❌ Erro ao processar PDF: ${err.message}`,'log-err');
+    console.error(err);
   }
 }
 
 /* ═══════════════════════════════════════════════════════════════
-   EVENTOS
+   EVENTOS E INICIALIZAÇÃO
 ═══════════════════════════════════════════════════════════════ */
 const uz=document.getElementById('uploadZone');
 const pf=document.getElementById('pdfFile');
@@ -1412,7 +1753,7 @@ uz.addEventListener('drop',e=>{
   if(f&&f.type==='application/pdf') extractPDF(f);
   else log('⚠️ Arquivo não é um PDF.','log-warn');
 });
-pf.addEventListener('change',e=>{ const f=e.target.files?.[0]; if(f) extractPDF(f); });
+pf.addEventListener('change',e=>{ const f=e.target.files?.[0]; if(f){ extractPDF(f); e.target.value=''; } });
 
 document.getElementById('btnToggleRaw').addEventListener('click',()=>{
   const ta=document.getElementById('rawText');
@@ -1428,23 +1769,16 @@ document.getElementById('btnClearPdf').addEventListener('click',()=>{
   setStep(1);
 });
 
-/* ═══════════════════════════════════════════════════════════════
-   HOOK: Após calcular, tenta preencher valores do aluno do PDF
-═══════════════════════════════════════════════════════════════ */
-const _origCalc=calculateAndRender;
-// eslint-disable-next-line no-global-assign
-function calculateAndRenderHooked(){
-  _origCalc();
-  if(window._pendingSV&&lastComp){
-    fillStudentValues(window._pendingSV);
-    window._pendingSV=null;
-  }
+// Garantir que o botão Calcular use a função corrigida
+const calcBtn = document.getElementById('calcBtn');
+if(calcBtn){
+  const newBtn = calcBtn.cloneNode(true);
+  calcBtn.parentNode.replaceChild(newBtn, calcBtn);
+  newBtn.addEventListener('click', calculateAndRender);
+} else {
+  document.querySelector('[onclick="calculateAndRender()"]')?.setAttribute('onclick','calculateAndRender()');
 }
-document.querySelector('[onclick="calculateAndRender()"]').setAttribute('onclick','calculateAndRenderHooked()');
 
-/* ═══════════════════════════════════════════════════════════════
-   INIT
-═══════════════════════════════════════════════════════════════ */
 buildDynamic();
 </script>
 </body>
