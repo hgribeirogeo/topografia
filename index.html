@@ -1,1478 +1,1451 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Calculadora de Cálculo Planimétrico</title>
-  <style>
-    :root {
-      --bg: #0f172a;
-      --panel: #111827;
-      --panel-2: #1f2937;
-      --line: #334155;
-      --text: #e5e7eb;
-      --muted: #94a3b8;
-      --accent: #22c55e;
-      --accent-2: #38bdf8;
-      --warn: #f59e0b;
-      --danger: #ef4444;
-      --ok: #10b981;
-      --shadow: 0 14px 40px rgba(0,0,0,.25);
-      --radius: 18px;
-    }
-
-    * { box-sizing: border-box; }
-
-    body {
-      margin: 0;
-      font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-      background:
-        radial-gradient(circle at top right, rgba(56,189,248,.14), transparent 26%),
-        radial-gradient(circle at top left, rgba(34,197,94,.11), transparent 22%),
-        var(--bg);
-      color: var(--text);
-    }
-
-    .container {
-      width: min(1400px, calc(100% - 24px));
-      margin: 20px auto 48px;
-    }
-
-    .hero {
-      background: linear-gradient(135deg, rgba(17,24,39,.96), rgba(15,23,42,.92));
-      border: 1px solid rgba(148,163,184,.18);
-      border-radius: 24px;
-      padding: 28px;
-      box-shadow: var(--shadow);
-      margin-bottom: 18px;
-    }
-
-    .hero h1 {
-      margin: 0 0 10px;
-      font-size: clamp(1.7rem, 2.5vw, 2.6rem);
-      line-height: 1.1;
-    }
-
-    .hero p {
-      margin: 0;
-      color: var(--muted);
-      font-size: 1rem;
-      max-width: 980px;
-    }
-
-    .badge-row {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 10px;
-      margin-top: 16px;
-    }
-
-    .badge {
-      padding: 8px 12px;
-      border-radius: 999px;
-      background: rgba(148,163,184,.12);
-      border: 1px solid rgba(148,163,184,.18);
-      color: var(--text);
-      font-size: .9rem;
-    }
-
-    .layout {
-      display: grid;
-      grid-template-columns: 1fr;
-      gap: 18px;
-      align-items: start;
-    }
-
-    .panel {
-      background: rgba(17,24,39,.95);
-      border: 1px solid rgba(148,163,184,.15);
-      border-radius: var(--radius);
-      box-shadow: var(--shadow);
-    }
-
-    .panel-header {
-      padding: 18px 18px 0;
-    }
-
-    .panel-header h2,
-    .panel-header h3 {
-      margin: 0 0 8px;
-      font-size: 1.08rem;
-    }
-
-    .panel-header p {
-      margin: 0;
-      color: var(--muted);
-      font-size: .94rem;
-    }
-
-    .panel-body {
-      padding: 18px;
-    }
-
-    .sticky {
-      position: static;
-      top: auto;
-    }
-
-    .form-grid {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 12px;
-    }
-
-    .field {
-      display: flex;
-      flex-direction: column;
-      gap: 6px;
-    }
-
-    .field.full { grid-column: 1 / -1; }
-
-    label {
-      font-size: .9rem;
-      color: #cbd5e1;
-    }
-
-    input, select, textarea, button {
-      font: inherit;
-    }
-
-    input, select, textarea {
-      width: 100%;
-      border: 1px solid rgba(148,163,184,.18);
-      background: rgba(15,23,42,.9);
-      color: var(--text);
-      border-radius: 12px;
-      padding: 11px 12px;
-      outline: none;
-      transition: border-color .18s ease, transform .18s ease, box-shadow .18s ease;
-    }
-
-    input:focus, select:focus, textarea:focus {
-      border-color: rgba(56,189,248,.75);
-      box-shadow: 0 0 0 3px rgba(56,189,248,.14);
-    }
-
-    .help {
-      color: var(--muted);
-      font-size: .8rem;
-      line-height: 1.35;
-    }
-
-    .actions {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 10px;
-      margin-top: 16px;
-    }
-
-    button {
-      border: 0;
-      cursor: pointer;
-      border-radius: 12px;
-      padding: 11px 14px;
-      font-weight: 600;
-      transition: transform .15s ease, opacity .15s ease, box-shadow .15s ease;
-    }
-
-    button:hover { transform: translateY(-1px); }
-    button:active { transform: translateY(0); }
-
-    .btn-primary {
-      background: linear-gradient(135deg, var(--accent), #16a34a);
-      color: white;
-      box-shadow: 0 10px 20px rgba(34,197,94,.16);
-    }
-
-    .btn-secondary {
-      background: linear-gradient(135deg, var(--accent-2), #0284c7);
-      color: white;
-      box-shadow: 0 10px 20px rgba(56,189,248,.16);
-    }
-
-    .btn-ghost {
-      background: rgba(148,163,184,.1);
-      color: var(--text);
-      border: 1px solid rgba(148,163,184,.15);
-    }
-
-    .btn-warn {
-      background: linear-gradient(135deg, #f59e0b, #d97706);
-      color: white;
-    }
-
-    .status-grid {
-      display: grid;
-      grid-template-columns: repeat(4, minmax(0, 1fr));
-      gap: 12px;
-      margin-bottom: 18px;
-    }
-
-    .stat {
-      background: rgba(15,23,42,.9);
-      border: 1px solid rgba(148,163,184,.12);
-      border-radius: 16px;
-      padding: 14px;
-      min-height: 88px;
-    }
-
-    .stat .label {
-      color: var(--muted);
-      font-size: .84rem;
-      margin-bottom: 8px;
-    }
-
-    .stat .value {
-      font-size: 1.2rem;
-      font-weight: 700;
-      line-height: 1.2;
-      word-break: break-word;
-    }
-
-    .ok { color: var(--ok); }
-    .danger { color: var(--danger); }
-    .warn { color: var(--warn); }
-
-    .dynamic-grid {
-      display: grid;
-      grid-template-columns: repeat(2, minmax(280px, 1fr));
-      gap: 14px;
-      margin-top: 16px;
-    }
-
-    .mini-card {
-      background: rgba(15,23,42,.82);
-      border: 1px solid rgba(148,163,184,.12);
-      border-radius: 16px;
-      padding: 14px;
-    }
-
-    .mini-card h4 {
-      margin: 0 0 12px;
-      font-size: .98rem;
-    }
-
-    .mini-list {
-      display: grid;
-      gap: 10px;
-    }
-
-    .table-wrap {
-      overflow-x: auto;
-      overflow-y: visible;
-      max-width: 100%;
-      border: 1px solid rgba(148,163,184,.12);
-      border-radius: 16px;
-      background: rgba(15,23,42,.84);
-    }
-
-    table {
-      border-collapse: collapse;
-      width: 100%;
-      min-width: 0;
-      table-layout: auto;
-    }
-
-    th, td {
-      padding: 10px 10px;
-      border-bottom: 1px solid rgba(148,163,184,.1);
-      border-right: 1px solid rgba(148,163,184,.08);
-      text-align: left;
-      vertical-align: top;
-      font-size: .88rem;
-      word-break: break-word;
-      white-space: normal;
-    }
-
-    th {
-      position: sticky;
-      top: 0;
-      z-index: 1;
-      background: rgba(30,41,59,.96);
-      color: #f8fafc;
-      white-space: nowrap;
-    }
-
-    tr:nth-child(even) td {
-      background: rgba(255,255,255,.012);
-    }
-
-    .section {
-      margin-top: 18px;
-    }
-
-    .section-title {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      gap: 12px;
-      margin-bottom: 10px;
-    }
-
-    .section-title h3 {
-      margin: 0;
-      font-size: 1.06rem;
-    }
-
-    .section-title span {
-      color: var(--muted);
-      font-size: .85rem;
-    }
-
-    .summary-grid {
-      display: grid;
-      grid-template-columns: repeat(3, minmax(260px, 1fr));
-      gap: 12px;
-    }
-
-    .summary-card {
-      background: rgba(15,23,42,.88);
-      border: 1px solid rgba(148,163,184,.12);
-      border-radius: 16px;
-      padding: 14px;
-    }
-
-    .summary-card h4 {
-      margin: 0 0 10px;
-      font-size: .95rem;
-    }
-
-    .summary-card dl {
-      margin: 0;
-      display: grid;
-      grid-template-columns: auto 1fr;
-      gap: 6px 10px;
-      font-size: .9rem;
-    }
-
-    .summary-card dt { color: var(--muted); }
-    .summary-card dd { margin: 0; font-weight: 600; }
-
-    .chart-card {
-      background: rgba(15,23,42,.86);
-      border: 1px solid rgba(148,163,184,.12);
-      border-radius: 18px;
-      padding: 14px;
-      overflow: hidden;
-    }
-
-    #plotSvg {
-      width: 100%;
-      min-height: 520px;
-      display: block;
-      background:
-        radial-gradient(circle at center, rgba(56,189,248,.06), transparent 45%),
-        linear-gradient(180deg, rgba(15,23,42,.95), rgba(2,6,23,.98));
-      border-radius: 14px;
-      border: 1px solid rgba(148,163,184,.08);
-    }
-
-    .legend {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 14px;
-      margin-top: 10px;
-      color: var(--muted);
-      font-size: .88rem;
-    }
-
-    .legend-item {
-      display: inline-flex;
-      align-items: center;
-      gap: 8px;
-    }
-
-    .legend-line {
-      width: 28px;
-      height: 0;
-      border-top: 3px solid var(--accent-2);
-      border-radius: 999px;
-    }
-
-    .legend-point {
-      width: 12px;
-      height: 12px;
-      border-radius: 999px;
-      background: var(--accent);
-      border: 2px solid white;
-    }
-
-    .notes {
-      margin-top: 14px;
-      font-size: .86rem;
-      color: var(--muted);
-      line-height: 1.5;
-    }
-
-    code.inline {
-      background: rgba(148,163,184,.14);
-      padding: 2px 6px;
-      border-radius: 8px;
-      color: #e2e8f0;
-    }
-
-    .empty-state {
-      border: 1px dashed rgba(148,163,184,.25);
-      border-radius: 18px;
-      padding: 26px;
-      text-align: center;
-      color: var(--muted);
-      background: rgba(15,23,42,.6);
-    }
-
-    @media (max-width: 1120px) {
-      .status-grid,
-      .summary-grid,
-      .dynamic-grid { grid-template-columns: 1fr 1fr; }
-    }
-      .sticky { position: static; }
-      .status-grid,
-      .summary-grid,
-      .dynamic-grid { grid-template-columns: 1fr 1fr; }
-    }
-
-    @media (max-width: 900px) {
-      .form-grid,
-      .status-grid,
-      .summary-grid,
-      .dynamic-grid { grid-template-columns: 1fr; }
-      #plotSvg { min-height: 430px; }
-    }
-
-    @media (max-width: 760px) {
-      .container { width: min(100% - 14px, 100%); }
-      .hero, .panel-body, .panel-header { padding-left: 14px; padding-right: 14px; }
-      table { font-size: .82rem; }
-      th, td { padding: 8px 8px; }
-      #plotSvg { min-height: 360px; }
-    }
-      .hero, .panel-body, .panel-header { padding-left: 14px; padding-right: 14px; }
-      .form-grid,
-      .status-grid,
-      .summary-grid,
-      .dynamic-grid { grid-template-columns: 1fr; }
-      #plotSvg { min-height: 420px; }
-    }
-  </style>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<title>Corretor de Relatórios — Topografia Ambiental</title>
+<style>
+:root{
+  --bg:#0f172a;--surface:#111827;--surface2:#1e293b;--surface3:#0f172a;
+  --border:rgba(148,163,184,.18);--border2:rgba(148,163,184,.10);
+  --text:#e2e8f0;--muted:#64748b;--muted2:#94a3b8;
+  --green:#22c55e;--green2:#16a34a;--green-bg:rgba(34,197,94,.08);
+  --blue:#38bdf8;--blue2:#0284c7;--blue-bg:rgba(56,189,248,.08);
+  --amber:#f59e0b;--amber-bg:rgba(245,158,11,.10);
+  --red:#ef4444;--red-bg:rgba(239,68,68,.10);
+  --purple:#a78bfa;--purple2:#7c3aed;--purple-bg:rgba(124,58,237,.10);
+  --radius:14px;--shadow:0 8px 32px rgba(0,0,0,.32);
+}
+*{box-sizing:border-box;margin:0;padding:0;}
+body{font-family:Inter,ui-sans-serif,system-ui,sans-serif;background:var(--bg);color:var(--text);min-height:100vh;}
+a{color:var(--blue);text-decoration:none;}
+
+/* ── layout ── */
+.wrap{width:min(1360px,calc(100% - 24px));margin:0 auto;padding:20px 0 60px;}
+.row{display:flex;gap:16px;align-items:flex-start;}
+.col{flex:1;min-width:0;}
+.col-auto{flex:0 0 auto;}
+
+/* ── typography ── */
+h1{font-size:clamp(1.5rem,2.2vw,2.2rem);font-weight:700;line-height:1.15;}
+h2{font-size:1.05rem;font-weight:600;}
+h3{font-size:.95rem;font-weight:600;}
+p{line-height:1.6;color:var(--muted2);}
+small{font-size:.8rem;color:var(--muted);}
+
+/* ── cards ── */
+.card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);box-shadow:var(--shadow);}
+.card-hd{padding:16px 20px 0;}
+.card-bd{padding:16px 20px 20px;}
+.card-hd+.card-bd{padding-top:12px;}
+
+/* ── module tabs ── */
+.mod-bar{display:flex;gap:0;margin-bottom:20px;border-radius:var(--radius);overflow:hidden;border:1px solid var(--border);background:var(--surface);}
+.mod-tab{flex:1;padding:14px 10px;text-align:center;border:0;background:transparent;color:var(--muted2);cursor:pointer;font-size:.88rem;font-weight:600;transition:background .15s,color .15s;border-right:1px solid var(--border);font-family:inherit;}
+.mod-tab:last-child{border-right:0;}
+.mod-tab.active{background:var(--purple2);color:#fff;}
+.mod-tab.disabled{opacity:.4;cursor:not-allowed;pointer-events:none;}
+.mod-tab .tag{display:block;font-size:.7rem;font-weight:400;opacity:.7;margin-top:2px;}
+
+/* ── step indicator ── */
+.steps{display:flex;gap:0;margin-bottom:18px;}
+.step{display:flex;align-items:center;flex:1;}
+.step-dot{width:28px;height:28px;border-radius:50%;background:var(--surface2);border:2px solid var(--border2);display:flex;align-items:center;justify-content:center;font-size:.78rem;font-weight:700;flex-shrink:0;z-index:1;}
+.step.done .step-dot{background:var(--green2);border-color:var(--green2);color:#fff;}
+.step.active .step-dot{background:var(--purple2);border-color:var(--purple2);color:#fff;}
+.step-label{font-size:.78rem;color:var(--muted);margin-left:6px;white-space:nowrap;}
+.step.active .step-label{color:var(--text);}
+.step.done .step-label{color:var(--green);}
+.step-line{flex:1;height:2px;background:var(--border2);margin:0 6px;}
+.step.done .step-line{background:var(--green2);}
+
+/* ── forms ── */
+.field{display:flex;flex-direction:column;gap:5px;margin-bottom:12px;}
+label{font-size:.84rem;color:var(--muted2);}
+input,select,textarea{width:100%;background:var(--surface3);border:1px solid var(--border);color:var(--text);border-radius:9px;padding:9px 11px;font:inherit;font-size:.9rem;outline:none;transition:border-color .15s;}
+input:focus,select:focus{border-color:var(--purple);box-shadow:0 0 0 2px var(--purple-bg);}
+input.extracted{border-color:rgba(34,197,94,.5);background:var(--green-bg);}
+textarea{resize:vertical;font-family:ui-monospace,monospace;font-size:.8rem;}
+.fg{display:grid;grid-template-columns:1fr 1fr;gap:12px;}
+.fg.g3{grid-template-columns:1fr 1fr 1fr;}
+.full{grid-column:1/-1;}
+.hint{font-size:.77rem;color:var(--muted);line-height:1.4;margin-top:2px;}
+
+/* ── buttons ── */
+.btn{border:0;border-radius:9px;padding:9px 16px;font:inherit;font-size:.87rem;font-weight:600;cursor:pointer;transition:transform .12s,opacity .15s;display:inline-flex;align-items:center;gap:7px;}
+.btn:hover{transform:translateY(-1px);}
+.btn:active{transform:translateY(0);}
+.btn-green {background:linear-gradient(135deg,var(--green),var(--green2));color:#fff;}
+.btn-blue  {background:linear-gradient(135deg,var(--blue),var(--blue2));color:#fff;}
+.btn-purple{background:linear-gradient(135deg,#8b5cf6,var(--purple2));color:#fff;}
+.btn-amber {background:linear-gradient(135deg,var(--amber),#d97706);color:#fff;}
+.btn-ghost {background:var(--surface2);border:1px solid var(--border);color:var(--muted2);}
+.btn-sm{padding:6px 12px;font-size:.8rem;}
+.btn-row{display:flex;flex-wrap:wrap;gap:8px;margin-top:14px;}
+
+/* ── upload zone ── */
+.upload-zone{border:2px dashed rgba(167,139,250,.35);border-radius:var(--radius);padding:32px 20px;text-align:center;cursor:pointer;transition:all .2s;background:var(--purple-bg);position:relative;}
+.upload-zone:hover,.upload-zone.drag{border-color:var(--purple);background:rgba(124,58,237,.15);}
+.upload-zone input[type=file]{position:absolute;inset:0;opacity:0;cursor:pointer;width:100%;height:100%;}
+.upload-zone .ico{font-size:2.4rem;margin-bottom:8px;}
+.upload-zone h3{color:var(--purple);margin-bottom:4px;}
+
+/* ── extraction log ── */
+.log-box{background:var(--surface3);border:1px solid var(--border2);border-radius:10px;padding:12px 14px;font-family:ui-monospace,monospace;font-size:.8rem;line-height:1.7;max-height:180px;overflow-y:auto;margin-top:12px;}
+.log-ok  {color:var(--green);}
+.log-warn{color:var(--amber);}
+.log-err {color:var(--red);}
+.log-info{color:var(--blue);}
+
+/* ── extracted values chips ── */
+.chips{display:flex;flex-wrap:wrap;gap:7px;margin-top:10px;}
+.chip{padding:5px 10px;border-radius:999px;font-size:.78rem;font-weight:600;border:1px solid;cursor:default;}
+.chip-green{background:var(--green-bg);border-color:rgba(34,197,94,.3);color:#86efac;}
+.chip-amber{background:var(--amber-bg);border-color:rgba(245,158,11,.3);color:#fcd34d;}
+.chip-blue {background:var(--blue-bg); border-color:rgba(56,189,248,.3); color:#7dd3fc;}
+
+/* ── dynamic inputs ── */
+.dyn-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:10px;margin-top:12px;}
+.dyn-card{background:var(--surface2);border:1px solid var(--border2);border-radius:10px;padding:12px;}
+.dyn-card h4{font-size:.84rem;color:var(--muted2);margin-bottom:8px;}
+
+/* ── status cards ── */
+.stat-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:18px;}
+.stat{background:var(--surface);border:1px solid var(--border2);border-radius:var(--radius);padding:14px;}
+.stat .lbl{font-size:.78rem;color:var(--muted);margin-bottom:6px;}
+.stat .val{font-size:1.1rem;font-weight:700;}
+.c-green{color:var(--green);}
+.c-red  {color:var(--red);}
+.c-amber{color:var(--amber);}
+
+/* ── results table ── */
+.tbl-wrap{overflow-x:auto;border:1px solid var(--border2);border-radius:var(--radius);background:var(--surface);}
+table{border-collapse:collapse;width:100%;font-size:.83rem;}
+th{background:var(--surface2);padding:9px 10px;text-align:left;white-space:nowrap;font-size:.77rem;color:var(--muted2);font-weight:600;border-bottom:1px solid var(--border2);}
+td{padding:8px 10px;border-bottom:1px solid var(--border2);vertical-align:middle;}
+tr:last-child td{border-bottom:0;}
+tr:nth-child(even) td{background:rgba(255,255,255,.013);}
+
+/* ── student values table ── */
+.sv-table input{width:130px;padding:5px 8px;font-size:.82rem;border-radius:7px;}
+
+/* ── inconsistency report ── */
+.report-hero{background:linear-gradient(135deg,rgba(239,68,68,.08),rgba(245,158,11,.06));border:1px solid rgba(239,68,68,.2);border-radius:var(--radius);padding:18px 20px;margin-bottom:16px;}
+.report-hero h2{color:#fca5a5;margin-bottom:4px;}
+.report-hero p{color:var(--muted2);font-size:.88rem;}
+.report-stats{display:flex;gap:12px;margin-top:12px;flex-wrap:wrap;}
+.rstat{padding:6px 14px;border-radius:999px;font-size:.82rem;font-weight:700;}
+.rstat-red   {background:var(--red-bg);  color:var(--red);  border:1px solid rgba(239,68,68,.3);}
+.rstat-amber {background:var(--amber-bg);color:var(--amber);border:1px solid rgba(245,158,11,.3);}
+.rstat-green {background:var(--green-bg);color:var(--green);border:1px solid rgba(34,197,94,.3);}
+
+.incon-item{padding:14px 16px;border-radius:11px;margin-bottom:8px;display:flex;gap:12px;}
+.incon-item.sev-err {background:var(--red-bg);  border:1px solid rgba(239,68,68,.25);}
+.incon-item.sev-warn{background:var(--amber-bg);border:1px solid rgba(245,158,11,.25);}
+.incon-item.sev-ok  {background:var(--green-bg);border:1px solid rgba(34,197,94,.2);}
+.incon-ico{font-size:1.2rem;flex-shrink:0;margin-top:1px;}
+.incon-body .title{font-weight:600;font-size:.9rem;margin-bottom:3px;}
+.incon-body .detail{font-size:.82rem;color:var(--muted2);line-height:1.5;}
+.incon-body .diff{font-family:ui-monospace,monospace;font-size:.8rem;color:var(--amber);margin-top:3px;}
+
+.cons-box{background:var(--surface3);border:1px solid var(--border2);border-radius:10px;padding:16px;white-space:pre-wrap;font-size:.88rem;line-height:1.7;min-height:120px;color:var(--text);}
+
+/* ── chart ── */
+.chart-box{background:var(--surface3);border:1px solid var(--border2);border-radius:var(--radius);padding:14px;overflow:hidden;}
+#plotSvg{width:100%;min-height:480px;display:block;}
+
+/* ── coming soon ── */
+.coming-soon{text-align:center;padding:80px 20px;color:var(--muted);}
+.coming-soon .icon{font-size:3rem;margin-bottom:12px;}
+.coming-soon h2{color:var(--muted2);margin-bottom:8px;}
+
+/* ── divider ── */
+.divider{height:1px;background:var(--border2);margin:18px 0;}
+
+/* ── badge ── */
+.badge{display:inline-block;padding:2px 8px;border-radius:999px;font-size:.73rem;font-weight:700;}
+.badge-green {background:var(--green-bg);color:var(--green);}
+.badge-amber {background:var(--amber-bg);color:var(--amber);}
+.badge-red   {background:var(--red-bg);  color:var(--red);}
+.badge-muted {background:var(--surface2);color:var(--muted2);}
+
+/* ── code ── */
+code{background:var(--surface2);padding:2px 6px;border-radius:5px;font-size:.83em;color:var(--blue);}
+
+/* ── responsive ── */
+@media(max-width:900px){
+  .stat-grid{grid-template-columns:1fr 1fr;}
+  .fg{grid-template-columns:1fr;}
+  .fg.g3{grid-template-columns:1fr 1fr;}
+}
+@media(max-width:640px){
+  .mod-tab .tag{display:none;}
+  .stat-grid{grid-template-columns:1fr 1fr;}
+  .steps{display:none;}
+  .sv-table input{width:100px;}
+}
+</style>
 </head>
 <body>
-  <div class="container">
-    <section class="hero">
-      <h1>Calculadora de Cálculo Planimétrico</h1>
-      <p>
-        Página estática em HTML, CSS e JavaScript para GitHub Pages. Ela segue a convenção da aula:
-        azimute a partir do Norte no sentido horário, projeções relativas por <code class="inline">X = d · sen(Az)</code>
-        e <code class="inline">Y = d · cos(Az)</code>, fechamento angular, cálculo dos azimutes, fechamento linear,
-        correções proporcionais e coordenadas absolutas.
-      </p>
-      <div class="badge-row">
-        <span class="badge">Fechamento angular</span>
-        <span class="badge">Azimutes</span>
-        <span class="badge">Projeções X/Y</span>
-        <span class="badge">Correção proporcional</span>
-        <span class="badge">Tabela final</span>
-        <span class="badge">Gráfico cartesiano</span>
-      </div>
-    </section>
+<div class="wrap">
 
-    <div class="layout">
-      <section class="panel sticky">
-        <div class="panel-header">
-          <h2>Entradas</h2>
-          <p>Defina o número de vértices e preencha os dados. Os campos são gerados automaticamente.</p>
-        </div>
-        <div class="panel-body">
-          <div class="form-grid">
-            <div class="field">
-              <label for="nVertices">Número de vértices (n)</label>
-              <input id="nVertices" type="number" min="3" max="50" step="1" value="4" />
-            </div>
-            <div class="field">
-              <label for="nIrradiacoes">Irradiações (I)</label>
-              <input id="nIrradiacoes" type="number" min="0" max="200" step="1" value="0" />
-            </div>
-            <div class="field">
-              <label for="azPartida">Azimute de partida</label>
-              <input id="azPartida" type="text" value="100°" placeholder="Ex.: 100° ou 100 00 00" />
-            </div>
+<!-- HEADER -->
+<div style="margin-bottom:20px;">
+  <h1 style="margin-bottom:4px;">Corretor de Relatórios — Topografia Ambiental</h1>
+  <p style="font-size:.92rem;">Importe o PDF do aluno · O sistema extrai os dados, recalcula e lista as inconsistências.</p>
+</div>
 
-            <div class="field">
-              <label for="xInicial">Coordenada X inicial</label>
-              <input id="xInicial" type="number" step="any" value="100" />
-            </div>
-            <div class="field">
-              <label for="yInicial">Coordenada Y inicial</label>
-              <input id="yInicial" type="number" step="any" value="100" />
-            </div>
+<!-- MODULE TABS -->
+<div class="mod-bar">
+  <button class="mod-tab active" onclick="switchModule('t1',this)">
+    T1 · Planimetria
+    <span class="tag">Poligonal fechada</span>
+  </button>
+  <button class="mod-tab disabled">
+    T2 · Altimetria
+    <span class="tag">em breve</span>
+  </button>
+  <button class="mod-tab disabled">
+    T3 · Planialtimetria
+    <span class="tag">em breve</span>
+  </button>
+  <button class="mod-tab disabled">
+    T4 · Corte/Aterro
+    <span class="tag">em breve</span>
+  </button>
+</div>
 
-            <div class="field">
-              <label for="constB">Constante angular b (segundos)</label>
-              <input id="constB" type="number" min="0" step="any" value="180" />
-            </div>
-            <div class="field">
-              <label for="constD">Constante linear d (m/√km)</label>
-              <input id="constD" type="number" min="0" step="any" value="2.20" />
-            </div>
+<!-- ═══════════════════════════════════════════════════════ MODULE T1 -->
+<div id="mod-t1">
 
-            <div class="field full">
-              <label for="rotulosInput">Rótulos dos pontos</label>
-              <input id="rotulosInput" type="text" value="A,B,C,D" placeholder="Ex.: A,B,C,D ou P1,P2,P3,P4" />
-              <div class="help">Os rótulos devem ter a mesma quantidade de vértices. Se ficar vazio, a página gera automaticamente.</div>
-            </div>
-          </div>
-
-          <div id="dynamicInputs" class="dynamic-grid"></div>
-          <div id="irradiationInputs" class="section" style="margin-top:16px;"></div>
-
-          <div class="actions">
-            <button class="btn-primary" id="btnCalcular">Calcular</button>
-            <button class="btn-secondary" id="btnExemplo">Carregar exemplo da aula</button>
-            <button class="btn-ghost" id="btnGerar">Atualizar campos</button>
-            <button class="btn-warn" id="btnCsv">Baixar CSV final</button>
-          </div>
-
-          <div class="notes">
-            Formatos aceitos para ângulos e azimutes: <strong>graus decimais</strong> ou <strong>G M S</strong>.<br />
-            Exemplos válidos: <code class="inline">76°33'</code>, <code class="inline">76 33 45</code>, <code class="inline">76.5625</code>.<br />
-            Convenção adotada na página: <code class="inline">Azᵢ₊₁ = Azᵢ + AHcorr - 180°</code>, com normalização para 0°–360°.<br />
-            Para irradiações, não há correções: o cálculo usa o ponto-base informado, o ângulo da irradiação e a distância medida.
-          </div>
-        </div>
-      </section>
-
-      <main>
-        <div class="status-grid" id="statusGrid">
-          <div class="stat"><div class="label">Fechamento angular</div><div class="value">—</div></div>
-          <div class="stat"><div class="label">Tolerância angular</div><div class="value">—</div></div>
-          <div class="stat"><div class="label">Fechamento linear</div><div class="value">—</div></div>
-          <div class="stat"><div class="label">Tolerância linear</div><div class="value">—</div></div>
-        </div>
-
-        <div id="resultsRoot" class="panel">
-          <div class="panel-header">
-            <h2>Resultados</h2>
-            <p>A planilha completa aparece abaixo depois do cálculo.</p>
-          </div>
-          <div class="panel-body">
-            <div id="emptyState" class="empty-state">
-              Preencha os dados e clique em <strong>Calcular</strong>.
-            </div>
-            <div id="resultsContent" style="display:none;"></div>
-          </div>
-        </div>
-      </main>
+  <!-- STEP INDICATOR -->
+  <div class="steps" id="stepBar">
+    <div class="step active" id="step1">
+      <div class="step-dot">1</div><div class="step-label">PDF</div>
+      <div class="step-line"></div>
+    </div>
+    <div class="step" id="step2">
+      <div class="step-dot">2</div><div class="step-label">Entrada</div>
+      <div class="step-line"></div>
+    </div>
+    <div class="step" id="step3">
+      <div class="step-dot">3</div><div class="step-label">Calcular</div>
+      <div class="step-line"></div>
+    </div>
+    <div class="step" id="step4">
+      <div class="step-dot">4</div><div class="step-label">Inconsistências</div>
     </div>
   </div>
 
-  <script>
-    const $ = (id) => document.getElementById(id);
+  <!-- ─── STEP 1: PDF ─── -->
+  <div id="panel-pdf" class="card" style="margin-bottom:16px;">
+    <div class="card-hd">
+      <div class="row" style="align-items:center;">
+        <div class="col"><h2>1 · Importar PDF do aluno</h2></div>
+        <div class="col-auto"><span class="badge badge-muted">PDF.js</span></div>
+      </div>
+    </div>
+    <div class="card-bd">
+      <div class="upload-zone" id="uploadZone">
+        <input type="file" id="pdfFile" accept=".pdf"/>
+        <div class="ico">📄</div>
+        <h3>Arraste o PDF ou clique para selecionar</h3>
+        <p style="font-size:.85rem;margin-top:4px;">PDF com texto. Tabelas em imagem: preencha manualmente.</p>
+      </div>
 
-    const nVerticesEl = $("nVertices");
-    const dynamicInputsEl = $("dynamicInputs");
-    const irradiationInputsEl = $("irradiationInputs");
-    const resultsContentEl = $("resultsContent");
-    const emptyStateEl = $("emptyState");
-    const statusGridEl = $("statusGrid");
+      <div id="logBox" class="log-box" style="display:none;"></div>
 
-    let lastComputation = null;
+      <div id="chipsBox" style="display:none;">
+        <div class="divider"></div>
+        <h3 style="margin-bottom:8px;font-size:.88rem;color:var(--muted2);">Valores detectados no PDF</h3>
+        <div id="chips" class="chips"></div>
+        <div class="btn-row">
+          <button class="btn btn-ghost btn-sm" id="btnToggleRaw">Ver texto bruto</button>
+          <button class="btn btn-ghost btn-sm" id="btnClearPdf">Limpar</button>
+        </div>
+        <textarea id="rawText" style="display:none;height:180px;margin-top:10px;" readonly></textarea>
+      </div>
+    </div>
+  </div>
 
-    function sanitizeNumberToken(token) {
-      return token.replace(/,/g, ".").trim();
+  <!-- ─── STEP 2: ENTRADA ─── -->
+  <div id="panel-entrada" class="card" style="margin-bottom:16px;">
+    <div class="card-hd"><h2>2 · Dados de entrada</h2></div>
+    <div class="card-bd">
+
+      <!-- config geral -->
+      <div class="fg g3" style="margin-bottom:16px;">
+        <div class="field">
+          <label>Nº de vértices</label>
+          <input id="nVert" type="number" min="3" max="20" value="4" onchange="buildDynamic()"/>
+        </div>
+        <div class="field">
+          <label>Nº de irradiações</label>
+          <input id="nIrr" type="number" min="0" max="50" value="0" onchange="buildDynamic()"/>
+        </div>
+        <div class="field">
+          <label>Azimute de partida</label>
+          <input id="azPartida" type="text" value="100°" placeholder="353°29'30&quot;"/>
+        </div>
+        <div class="field">
+          <label>X inicial</label>
+          <input id="xIni" type="number" step="any" value="100"/>
+        </div>
+        <div class="field">
+          <label>Y inicial</label>
+          <input id="yIni" type="number" step="any" value="100"/>
+        </div>
+        <div class="field">
+          <label>Constante angular b (″)</label>
+          <input id="constB" type="number" step="any" value="180"/>
+        </div>
+        <div class="field">
+          <label>Constante linear d (m/√km)</label>
+          <input id="constD" type="number" step="any" value="2.20"/>
+        </div>
+        <div class="field full">
+          <label>Rótulos (separados por vírgula)</label>
+          <input id="labels" type="text" value="A,B,C,D" placeholder="A,B,C,D"/>
+          <div class="hint">Mesma quantidade de vértices.</div>
+        </div>
+      </div>
+
+      <!-- dinâmicos: ângulos + distâncias -->
+      <div id="dynInputs" class="dyn-grid"></div>
+
+      <!-- irradiações -->
+      <div id="dynIrr"></div>
+
+      <div class="btn-row">
+        <button class="btn btn-green" onclick="calculateAndRender()">⚙️ Calcular</button>
+        <button class="btn btn-ghost" onclick="buildDynamic()">Atualizar campos</button>
+        <button class="btn btn-ghost" onclick="loadExample()">Exemplo da aula</button>
+        <button class="btn btn-amber" onclick="exportCsv()">⬇ CSV</button>
+      </div>
+      <p style="font-size:.78rem;margin-top:10px;">Formatos: <code>76°33'</code> · <code>76 33 45</code> · <code>76.5625</code>
+      — Convenção: Az<sub>i+1</sub> = Az<sub>i</sub> + AH<sub>corr</sub> − 180°</p>
+    </div>
+  </div>
+
+  <!-- ─── STEP 3: RESULTADOS ─── -->
+  <div id="panel-resultado" style="display:none;">
+
+    <div class="stat-grid" id="statGrid"></div>
+
+    <div class="card" style="margin-bottom:16px;">
+      <div class="card-hd"><h2>3 · Resultados calculados</h2></div>
+      <div class="card-bd" id="resultBody">
+        <div style="text-align:center;padding:40px;color:var(--muted);">Clique em Calcular.</div>
+      </div>
+    </div>
+
+    <!-- ─── STEP 4: VALORES DO ALUNO + INCONSISTÊNCIAS ─── -->
+    <div class="card" style="margin-bottom:16px;">
+      <div class="card-hd">
+        <h2>4 · Valores declarados pelo aluno</h2>
+        <p style="margin-top:4px;font-size:.85rem;">
+          Campos pré-preenchidos quando extraídos do PDF. Corrija se necessário, depois gere o relatório.
+        </p>
+      </div>
+      <div class="card-bd">
+        <div id="svTables"></div>
+        <div class="btn-row">
+          <button class="btn btn-purple" onclick="generateReport()">📋 Gerar relatório de inconsistências</button>
+          <button class="btn btn-ghost btn-sm" onclick="clearStudentValues()">Limpar valores do aluno</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- RELATÓRIO -->
+    <div id="reportPanel" style="display:none;">
+      <div class="report-hero">
+        <h2 id="reportTitle">Relatório de Inconsistências — T1 Planimetria</h2>
+        <p id="reportSubtitle">Comparação entre os valores declarados no relatório e os valores corretos calculados.</p>
+        <div class="report-stats" id="reportStats"></div>
+      </div>
+      <div id="inconList"></div>
+      <div class="card" style="margin-top:12px;">
+        <div class="card-hd"><h3>Rascunho das Considerações</h3></div>
+        <div class="card-bd">
+          <div id="consBox" class="cons-box"></div>
+          <div class="btn-row">
+            <button class="btn btn-ghost btn-sm" onclick="copyConsideracoes()">Copiar texto</button>
+            <button class="btn btn-amber btn-sm" onclick="exportReport()">Exportar CSV</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div><!-- /panel-resultado -->
+</div><!-- /mod-t1 -->
+
+<!-- MODULE T2/T3/T4 (reservados) -->
+<div id="mod-t2" style="display:none;">
+  <div class="coming-soon">
+    <div class="icon">📐</div>
+    <h2>T2 · Altimetria — em desenvolvimento</h2>
+    <p>Módulo de nivelamento geométrico e trigonométrico.</p>
+  </div>
+</div>
+<div id="mod-t3" style="display:none;">
+  <div class="coming-soon">
+    <div class="icon">🗺️</div>
+    <h2>T3 · Planialtimetria — em desenvolvimento</h2>
+    <p>Módulo integrado de planimetria e altimetria.</p>
+  </div>
+</div>
+<div id="mod-t4" style="display:none;">
+  <div class="coming-soon">
+    <div class="icon">🏗️</div>
+    <h2>T4 · Corte e Aterro — em desenvolvimento</h2>
+    <p>Módulo de cálculo de volumes.</p>
+  </div>
+</div>
+
+</div><!-- /wrap -->
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+<script>
+/* ═══════════════════════════════════════════════════════════════
+   MÓDULO SELECTOR
+═══════════════════════════════════════════════════════════════ */
+const MODULES = ['t1','t2','t3','t4'];
+function switchModule(id, btn) {
+  MODULES.forEach(m => {
+    document.getElementById('mod-'+m).style.display = (m===id) ? '' : 'none';
+  });
+  document.querySelectorAll('.mod-tab').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   UTILITÁRIOS MATEMÁTICOS
+═══════════════════════════════════════════════════════════════ */
+function parseAngle(v) {
+  const raw = String(v ?? '').trim();
+  if (!raw) return NaN;
+  const n = raw
+    .replace(/[°º]/g,' ').replace(/[′'`]/g,' ').replace(/[″"]/g,' ')
+    .replace(/,/g,'.').replace(/\s+/g,' ').trim();
+  const p = n.split(' ').filter(Boolean);
+  if (!p.length) return NaN;
+  if (p.length === 1) { const x = Number(p[0]); return isFinite(x)?x:NaN; }
+  const d = Number(p[0]), m = Number(p[1]||0), s = Number(p[2]||0);
+  if (![d,m,s].every(isFinite)) return NaN;
+  const sign = d < 0 ? -1 : 1;
+  return sign*(Math.abs(d)+m/60+s/3600);
+}
+
+function dmsParts(deg) {
+  const sign = deg < 0 ? -1 : 1;
+  let abs = Math.abs(deg);
+  let d = Math.floor(abs);
+  let mf = (abs-d)*60; let m = Math.floor(mf);
+  let s = Math.round((mf-m)*60*100)/100;
+  if(s>=60){s-=60;m++;}if(m>=60){m-=60;d++;}
+  return {sign,d,m,s};
+}
+
+function fDMS(deg, opt={}) {
+  const {signed=false,sd=2} = opt;
+  if (!isFinite(deg)) return '—';
+  const {sign,d,m,s}=dmsParts(deg);
+  const pre = sign<0?'-':(signed?'+':'');
+  const sf = s.toFixed(sd).replace(/\.0+$/,'');
+  return `${pre}${d}° ${String(m).padStart(2,'0')}' ${String(sf).padStart(2,'0')}"`;
+}
+
+function fNum(v,dec=3) {
+  if (!isFinite(v)) return '—';
+  return v.toLocaleString('pt-BR',{minimumFractionDigits:dec,maximumFractionDigits:dec});
+}
+
+function norm360(deg) {
+  let v = deg%360; if(v<0)v+=360; if(Math.abs(v-360)<1e-10)v=0; return v;
+}
+const toRad = d => d*Math.PI/180;
+
+/* ═══════════════════════════════════════════════════════════════
+   FORM DINÂMICO
+═══════════════════════════════════════════════════════════════ */
+function getN()   { return Math.max(3,Math.min(20,Number(document.getElementById('nVert').value)||4)); }
+function getNIrr(){ return Math.max(0,Math.min(50,Number(document.getElementById('nIrr').value)||0)); }
+
+function getLabels() {
+  const n = getN();
+  const raw = document.getElementById('labels').value.trim();
+  if(!raw) return Array.from({length:n},(_,i)=>i<26?String.fromCharCode(65+i):`P${i+1}`);
+  const ls = raw.split(',').map(x=>x.trim()).filter(Boolean);
+  if(ls.length!==n) return Array.from({length:n},(_,i)=>i<26?String.fromCharCode(65+i):`P${i+1}`);
+  return ls;
+}
+
+function buildDynamic() {
+  const n = getN();
+  const iCount = getNIrr();
+  document.getElementById('nVert').value = n;
+  document.getElementById('nIrr').value = iCount;
+  const labels = getLabels();
+
+  // Ângulos + distâncias
+  let html = '';
+  for(let i=0;i<n;i++){
+    const s=labels[i], e=labels[(i+1)%n];
+    html+=`<div class="dyn-card">
+      <h4>${s}</h4>
+      <div class="field"><label>Ângulo observado</label>
+        <input id="ang_${i}" type="text" placeholder="76°33'" oninput="markManual(this)"/></div>
+      <div class="field"><label>Distância ${s}−${e} (m)</label>
+        <input id="dst_${i}" type="number" step="any" min="0" placeholder="113.37" oninput="markManual(this)"/></div>
+    </div>`;
+  }
+  document.getElementById('dynInputs').innerHTML = html;
+
+  // Irradiações
+  if(!iCount){ document.getElementById('dynIrr').innerHTML=''; return; }
+  const opts = labels.map(l=>`<option>${l}</option>`).join('');
+  let irrHtml = '<div class="divider"></div><h3 style="margin-bottom:10px;font-size:.9rem;">Irradiações</h3><div class="dyn-grid">';
+  for(let i=0;i<iCount;i++){
+    irrHtml+=`<div class="dyn-card"><h4>Irradiação ${i+1}</h4>
+      <div class="field"><label>Nome</label><input id="irr_nm_${i}" type="text" placeholder="Ib1"/></div>
+      <div class="field"><label>Origem</label><select id="irr_or_${i}">${opts}</select></div>
+      <div class="field"><label>Ângulo</label><input id="irr_an_${i}" type="text" placeholder="25°00'"/></div>
+      <div class="field"><label>Distância</label><input id="irr_ds_${i}" type="number" step="any" min="0"/></div>
+    </div>`;
+  }
+  irrHtml+='</div>';
+  document.getElementById('dynIrr').innerHTML = irrHtml;
+}
+
+function markManual(el){ el.classList.remove('extracted'); }
+
+/* ═══════════════════════════════════════════════════════════════
+   LEITURA DE INPUTS
+═══════════════════════════════════════════════════════════════ */
+function readInputs() {
+  const n = getN();
+  const labels = getLabels();
+  const iCount = getNIrr();
+  const angles=[], dists=[];
+  for(let i=0;i<n;i++){
+    const a = parseAngle(document.getElementById('ang_'+i)?.value);
+    const d = Number(String(document.getElementById('dst_'+i)?.value||'').replace(/,/g,'.'));
+    if(!isFinite(a)) throw new Error(`Ângulo inválido no vértice ${labels[i]}`);
+    if(!isFinite(d)||d<=0) throw new Error(`Distância inválida em ${labels[i]}-${labels[(i+1)%n]}`);
+    angles.push(a); dists.push(d);
+  }
+  const irr=[];
+  for(let i=0;i<iCount;i++){
+    const nm = document.getElementById('irr_nm_'+i)?.value.trim()||`I${i+1}`;
+    const or = document.getElementById('irr_or_'+i)?.value;
+    const an = parseAngle(document.getElementById('irr_an_'+i)?.value);
+    const ds = Number(String(document.getElementById('irr_ds_'+i)?.value||'').replace(/,/g,'.'));
+    if(!isFinite(an)) throw new Error(`Ângulo inválido na irradiação ${nm}`);
+    if(!isFinite(ds)||ds<=0) throw new Error(`Distância inválida na irradiação ${nm}`);
+    irr.push({name:nm,from:or,angle:an,distance:ds});
+  }
+  const az  = parseAngle(document.getElementById('azPartida').value);
+  const x0  = Number(String(document.getElementById('xIni').value).replace(/,/g,'.'));
+  const y0  = Number(String(document.getElementById('yIni').value).replace(/,/g,'.'));
+  const bArc= Number(String(document.getElementById('constB').value).replace(/,/g,'.'));
+  const dLin= Number(String(document.getElementById('constD').value).replace(/,/g,'.'));
+  if(!isFinite(az))     throw new Error('Azimute de partida inválido');
+  if(!isFinite(x0)||!isFinite(y0)) throw new Error('Coordenadas iniciais inválidas');
+  if(!isFinite(bArc)||bArc<0) throw new Error('Constante b inválida');
+  if(!isFinite(dLin)||dLin<0) throw new Error('Constante d inválida');
+  return {n,labels,angles,dists,irr,az:norm360(az),x0,y0,bArc,dLin};
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   MOTOR DE CÁLCULO (fidelidade total ao original)
+═══════════════════════════════════════════════════════════════ */
+function computeTraverse(data) {
+  const {n,labels,angles,dists,az,x0,y0,bArc,dLin,irr} = data;
+  const theorAng = (n-2)*180;
+  const sumMeas  = angles.reduce((a,v)=>a+v,0);
+  const angErr   = sumMeas-theorAng;
+  const angErrAs = Math.abs(angErr)*3600;
+  const angTol   = bArc*Math.sqrt(n);
+  const angOk    = angErrAs <= angTol+1e-12;
+  const corr     = -angErr/n;
+  const corrAngles = angles.map(v=>v+corr);
+
+  const azimuths = Array(n).fill(0);
+  azimuths[0] = az;
+  for(let i=1;i<n;i++) azimuths[i]=norm360(azimuths[i-1]+corrAngles[i]-180);
+  const retAz    = norm360(azimuths[n-1]+corrAngles[0]-180);
+  const azClos   = norm360(retAz-az);
+
+  const rawP = dists.map((d,i)=>({dx:d*Math.sin(toRad(azimuths[i])),dy:d*Math.cos(toRad(azimuths[i]))}));
+  const sdx  = rawP.reduce((a,r)=>a+r.dx,0);
+  const sdy  = rawP.reduce((a,r)=>a+r.dy,0);
+  const xP   = rawP.filter(r=>r.dx>0).reduce((a,r)=>a+r.dx,0);
+  const xM   = rawP.filter(r=>r.dx<0).reduce((a,r)=>a+Math.abs(r.dx),0);
+  const yP   = rawP.filter(r=>r.dy>0).reduce((a,r)=>a+r.dy,0);
+  const yM   = rawP.filter(r=>r.dy<0).reduce((a,r)=>a+Math.abs(r.dy),0);
+  const linE = Math.hypot(sdx,sdy);
+  const peri = dists.reduce((a,v)=>a+v,0);
+  const linT = dLin*Math.sqrt(peri/1000);
+  const linOk= linE<=linT+1e-12;
+  const fx   = peri?sdx/peri:0;
+  const fy   = peri?sdy/peri:0;
+  const corrections = dists.map(d=>({cx:-fx*d,cy:-fy*d}));
+  const corrP = rawP.map((r,i)=>({dx:r.dx+corrections[i].cx,dy:r.dy+corrections[i].cy}));
+  const sumCdx = corrP.reduce((a,r)=>a+r.dx,0);
+  const sumCdy = corrP.reduce((a,r)=>a+r.dy,0);
+
+  const pts=[{label:labels[0],x:x0,y:y0}];
+  for(let i=0;i<n-1;i++) pts.push({label:labels[i+1],x:pts[i].x+corrP[i].dx,y:pts[i].y+corrP[i].dy});
+  const closed={x:pts[n-1].x+corrP[n-1].dx, y:pts[n-1].y+corrP[n-1].dy};
+
+  const rows = dists.map((d,i)=>({
+    i:i+1, seg:`${labels[i]}-${labels[(i+1)%n]}`,
+    angMeas:angles[i], angCorr:corrAngles[i], angCorrEach:corr,
+    dist:d, az:azimuths[i],
+    rawDx:rawP[i].dx, rawDy:rawP[i].dy,
+    cx:corrections[i].cx, cy:corrections[i].cy,
+    cdx:corrP[i].dx, cdy:corrP[i].dy,
+    xS:i===0?x0:pts[i].x, yS:i===0?y0:pts[i].y,
+    xE:i===n-1?closed.x:pts[i+1].x, yE:i===n-1?closed.y:pts[i+1].y
+  }));
+
+  const ptMap = new Map(pts.map(p=>[p.label,p]));
+  const irrRows = irr.map((ir,idx)=>{
+    const bi = labels.indexOf(ir.from);
+    const bAz = bi>=0?azimuths[bi]:NaN;
+    const fAz = norm360(bAz+ir.angle-180);
+    const bp  = ptMap.get(ir.from)||{x:x0,y:y0};
+    const dx  = ir.distance*Math.sin(toRad(fAz));
+    const dy  = ir.distance*Math.cos(toRad(fAz));
+    return {idx:idx+1,...ir,bAz,fAz,dx,dy,xb:bp.x,yb:bp.y,x:bp.x+dx,y:bp.y+dy};
+  });
+
+  return {
+    data,labels,n,
+    theorAng,sumMeas,angErr,angErrAs,angTol,angOk,corr,corrAngles,
+    azimuths,retAz,azClos,
+    rawP,sdx,sdy,xP,xM,yP,yM,
+    linE,peri,linT,linOk,fx,fy,corrections,corrP,sumCdx,sumCdy,
+    pts,closed,rows,irrRows
+  };
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   RENDERIZAÇÃO DE RESULTADOS
+═══════════════════════════════════════════════════════════════ */
+let lastComp = null;
+
+function setStats(items) {
+  document.getElementById('statGrid').innerHTML = items.map(it=>`
+    <div class="stat">
+      <div class="lbl">${it.label}</div>
+      <div class="val ${it.cls||''}">${it.value}</div>
+    </div>`).join('');
+}
+
+function renderResults(C) {
+  const rb = document.getElementById('resultBody');
+  rb.innerHTML = `
+  <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:18px;">
+    <div class="dyn-card">
+      <h4 style="margin-bottom:8px;">Fechamento angular</h4>
+      <dl style="display:grid;grid-template-columns:auto 1fr;gap:4px 10px;font-size:.83rem;">
+        <dt style="color:var(--muted)">Soma medida</dt><dd>${fDMS(C.sumMeas)}</dd>
+        <dt style="color:var(--muted)">Soma teórica</dt><dd>${fDMS(C.theorAng)}</dd>
+        <dt style="color:var(--muted)">Erro angular</dt><dd class="${C.angOk?'c-green':'c-red'}">${fDMS(C.angErr,{signed:true,sd:2})}</dd>
+        <dt style="color:var(--muted)">Tolerância</dt><dd>${fNum(C.angTol,2)}"</dd>
+        <dt style="color:var(--muted)">Correção/vértice</dt><dd>${fDMS(C.corr,{signed:true,sd:2})}</dd>
+      </dl>
+    </div>
+    <div class="dyn-card">
+      <h4 style="margin-bottom:8px;">Fechamento linear</h4>
+      <dl style="display:grid;grid-template-columns:auto 1fr;gap:4px 10px;font-size:.83rem;">
+        <dt style="color:var(--muted)">ΣX bruto</dt><dd>${fNum(C.sdx,4)} m</dd>
+        <dt style="color:var(--muted)">ΣY bruto</dt><dd>${fNum(C.sdy,4)} m</dd>
+        <dt style="color:var(--muted)">Erro linear</dt><dd class="${C.linOk?'c-green':'c-red'}">${fNum(C.linE,4)} m</dd>
+        <dt style="color:var(--muted)">Tolerância</dt><dd>${fNum(C.linT,4)} m</dd>
+        <dt style="color:var(--muted)">Perímetro</dt><dd>${fNum(C.peri,3)} m</dd>
+      </dl>
+    </div>
+    <div class="dyn-card">
+      <h4 style="margin-bottom:8px;">Fatores e retorno</h4>
+      <dl style="display:grid;grid-template-columns:auto 1fr;gap:4px 10px;font-size:.83rem;">
+        <dt style="color:var(--muted)">Fator X</dt><dd>${fNum(C.fx,7)}</dd>
+        <dt style="color:var(--muted)">Fator Y</dt><dd>${fNum(C.fy,7)}</dd>
+        <dt style="color:var(--muted)">Az. retorno</dt><dd>${fDMS(C.retAz)}</dd>
+        <dt style="color:var(--muted)">X retorno</dt><dd class="${Math.abs(C.closed.x-C.data.x0)<0.01?'c-green':'c-amber'}">${fNum(C.closed.x,3)}</dd>
+        <dt style="color:var(--muted)">Y retorno</dt><dd class="${Math.abs(C.closed.y-C.data.y0)<0.01?'c-green':'c-amber'}">${fNum(C.closed.y,3)}</dd>
+      </dl>
+    </div>
+  </div>
+
+  <div style="margin-bottom:14px;">
+    <h3 style="margin-bottom:8px;font-size:.9rem;">Planilha por segmento</h3>
+    <div class="tbl-wrap">
+    <table>
+      <thead><tr>
+        <th>#</th><th>Segmento</th>
+        <th>Âng. medido</th><th>Correção</th><th>Âng. corrigido</th>
+        <th>Distância</th><th>Azimute</th>
+        <th>PX bruto</th><th>PY bruto</th>
+        <th>Corr X</th><th>Corr Y</th>
+        <th>PX corr.</th><th>PY corr.</th>
+        <th>X início</th><th>Y início</th><th>X fim</th><th>Y fim</th>
+      </tr></thead>
+      <tbody>${C.rows.map(r=>`<tr>
+        <td>${r.i}</td><td><strong>${r.seg}</strong></td>
+        <td>${fDMS(r.angMeas)}</td>
+        <td>${fDMS(r.angCorrEach,{signed:true,sd:2})}</td>
+        <td>${fDMS(r.angCorr)}</td>
+        <td>${fNum(r.dist,3)}</td>
+        <td>${fDMS(r.az)}</td>
+        <td>${fNum(r.rawDx,4)}</td><td>${fNum(r.rawDy,4)}</td>
+        <td>${fNum(r.cx,5)}</td><td>${fNum(r.cy,5)}</td>
+        <td>${fNum(r.cdx,4)}</td><td>${fNum(r.cdy,4)}</td>
+        <td>${fNum(r.xS,3)}</td><td>${fNum(r.yS,3)}</td>
+        <td>${fNum(r.xE,3)}</td><td>${fNum(r.yE,3)}</td>
+      </tr>`).join('')}</tbody>
+    </table></div>
+  </div>
+
+  <div style="margin-bottom:14px;">
+    <h3 style="margin-bottom:8px;font-size:.9rem;">Coordenadas absolutas</h3>
+    <div class="tbl-wrap" style="max-width:320px;">
+    <table>
+      <thead><tr><th>Ponto</th><th>X</th><th>Y</th></tr></thead>
+      <tbody>${C.pts.map(p=>`<tr><td><strong>${p.label}</strong></td><td>${fNum(p.x,3)}</td><td>${fNum(p.y,3)}</td></tr>`).join('')}</tbody>
+    </table></div>
+  </div>
+
+  ${C.irrRows.length?`
+  <div style="margin-bottom:14px;">
+    <h3 style="margin-bottom:8px;font-size:.9rem;">Irradiações</h3>
+    <div class="tbl-wrap"><table>
+      <thead><tr><th>#</th><th>Nome</th><th>Origem</th><th>Az. base</th><th>Ângulo</th><th>Az. final</th><th>Distância</th><th>ΔX</th><th>ΔY</th><th>X</th><th>Y</th></tr></thead>
+      <tbody>${C.irrRows.map(r=>`<tr>
+        <td>${r.idx}</td><td>${r.name}</td><td>${r.from}</td>
+        <td>${fDMS(r.bAz)}</td><td>${fDMS(r.angle)}</td><td>${fDMS(r.fAz)}</td>
+        <td>${fNum(r.distance,3)}</td><td>${fNum(r.dx,3)}</td><td>${fNum(r.dy,3)}</td>
+        <td>${fNum(r.x,3)}</td><td>${fNum(r.y,3)}</td>
+      </tr>`).join('')}</tbody>
+    </table></div>
+  </div>`:''}
+
+  <div>
+    <h3 style="margin-bottom:8px;font-size:.9rem;">Gráfico cartesiano</h3>
+    <div class="chart-box">
+      <svg id="plotSvg" viewBox="0 0 980 580" xmlns="http://www.w3.org/2000/svg"></svg>
+    </div>
+  </div>`;
+  renderPlot(C);
+}
+
+function renderPlot(C) {
+  const svg = document.getElementById('plotSvg');
+  if(!svg) return;
+  const poly=[...C.pts,{...C.pts[0]}];
+  const all=[...poly,...C.irrRows.map(r=>({x:r.x,y:r.y}))];
+  const xs=all.map(p=>p.x),ys=all.map(p=>p.y);
+  const mn=v=>Math.min(...v),mx=v=>Math.max(...v);
+  const span=Math.max(mx(xs)-mn(xs),mx(ys)-mn(ys))||1;
+  const e=span*.2;
+  const xlo=mn(xs)-e,xhi=mx(xs)+e,ylo=mn(ys)-e,yhi=mx(ys)+e;
+  const W=980,H=580,M=65;
+  const scx=v=>M+(v-xlo)/(xhi-xlo)*(W-2*M);
+  const scy=v=>H-M-(v-ylo)/(yhi-ylo)*(H-2*M);
+  let c='';
+  for(let i=0;i<=6;i++){
+    const tx=M+(i/6)*(W-2*M),ty=M+(i/6)*(H-2*M);
+    c+=`<line x1="${tx}" y1="${M}" x2="${tx}" y2="${H-M}" stroke="rgba(148,163,184,.12)" stroke-width="1"/>`;
+    c+=`<line x1="${M}" y1="${ty}" x2="${W-M}" y2="${ty}" stroke="rgba(148,163,184,.12)" stroke-width="1"/>`;
+    c+=`<text x="${tx}" y="${H-M+20}" fill="rgba(226,232,240,.6)" font-size="12" text-anchor="middle">${fNum(xlo+(i/6)*(xhi-xlo),1)}</text>`;
+    c+=`<text x="${M-10}" y="${ty+4}" fill="rgba(226,232,240,.6)" font-size="12" text-anchor="end">${fNum(yhi-(i/6)*(yhi-ylo),1)}</text>`;
+  }
+  c+=`<polyline fill="none" stroke="#38bdf8" stroke-width="3" points="${poly.map(p=>`${scx(p.x)},${scy(p.y)}`).join(' ')}"/>`;
+  C.pts.forEach((p,i)=>{
+    const cx=scx(p.x),cy=scy(p.y);
+    c+=`<circle cx="${cx}" cy="${cy}" r="6" fill="#22c55e" stroke="white" stroke-width="2"/>`;
+    c+=`<text x="${cx+10}" y="${cy-10}" fill="white" font-size="13" font-weight="700">${p.label}</text>`;
+    if(i<C.pts.length-1){const nx=C.pts[i+1];c+=`<text x="${(cx+scx(nx.x))/2}" y="${(scy(p.y)+scy(nx.y))/2-8}" fill="#94a3b8" font-size="11" text-anchor="middle">${C.rows[i].seg}</text>`;}
+  });
+  C.irrRows.forEach(r=>{
+    c+=`<line x1="${scx(r.xb)}" y1="${scy(r.yb)}" x2="${scx(r.x)}" y2="${scy(r.y)}" stroke="#f59e0b" stroke-width="2" stroke-dasharray="6 4"/>`;
+    c+=`<circle cx="${scx(r.x)}" cy="${scy(r.y)}" r="5" fill="#f59e0b" stroke="white" stroke-width="2"/>`;
+    c+=`<text x="${scx(r.x)+9}" y="${scy(r.y)-8}" fill="#fcd34d" font-size="12" font-weight="700">${r.name}</text>`;
+  });
+  svg.innerHTML=c;
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   TABELA DE VALORES DO ALUNO
+═══════════════════════════════════════════════════════════════ */
+function buildStudentValuesTables(C) {
+  const {n,labels,corrAngles,azimuths,rawP,corrections,corrP,pts,linE,angErr,closed} = C;
+  let html = '';
+
+  // Ângulos corrigidos
+  html+=`<h3 style="font-size:.88rem;margin-bottom:8px;color:var(--muted2);">Ângulos corrigidos por vértice</h3>
+  <div class="tbl-wrap" style="margin-bottom:16px;"><table class="sv-table">
+  <thead><tr><th>Vértice</th><th>Ângulo corrigido (calculado)</th><th>Ângulo corrigido (aluno)</th></tr></thead>
+  <tbody>`;
+  labels.forEach((l,i)=>{
+    html+=`<tr>
+      <td><strong>${l}</strong></td>
+      <td style="font-family:monospace;color:var(--blue);">${fDMS(corrAngles[i])}</td>
+      <td><input id="sv_cang_${i}" type="text" placeholder="${fDMS(corrAngles[i])}"/></td>
+    </tr>`;
+  });
+  html+=`</tbody></table></div>`;
+
+  // Azimutes
+  html+=`<h3 style="font-size:.88rem;margin-bottom:8px;color:var(--muted2);">Azimutes por segmento</h3>
+  <div class="tbl-wrap" style="margin-bottom:16px;"><table class="sv-table">
+  <thead><tr><th>Segmento</th><th>Azimute (calculado)</th><th>Azimute (aluno)</th></tr></thead>
+  <tbody>`;
+  labels.forEach((l,i)=>{
+    const seg=`${l}-${labels[(i+1)%n]}`;
+    html+=`<tr>
+      <td><strong>${seg}</strong></td>
+      <td style="font-family:monospace;color:var(--blue);">${fDMS(azimuths[i])}</td>
+      <td><input id="sv_az_${i}" type="text" placeholder="${fDMS(azimuths[i])}"/></td>
+    </tr>`;
+  });
+  html+=`</tbody></table></div>`;
+
+  // Projeções brutas
+  html+=`<h3 style="font-size:.88rem;margin-bottom:8px;color:var(--muted2);">Projeções brutas (PX, PY)</h3>
+  <div class="tbl-wrap" style="margin-bottom:16px;"><table class="sv-table">
+  <thead><tr><th>Segmento</th><th>PX calc.</th><th>PX aluno</th><th>PY calc.</th><th>PY aluno</th></tr></thead>
+  <tbody>`;
+  labels.forEach((l,i)=>{
+    const seg=`${l}-${labels[(i+1)%n]}`;
+    html+=`<tr>
+      <td><strong>${seg}</strong></td>
+      <td style="font-family:monospace;color:var(--blue);">${fNum(rawP[i].dx,4)}</td>
+      <td><input id="sv_px_${i}" type="text" placeholder="${fNum(rawP[i].dx,4)}"/></td>
+      <td style="font-family:monospace;color:var(--blue);">${fNum(rawP[i].dy,4)}</td>
+      <td><input id="sv_py_${i}" type="text" placeholder="${fNum(rawP[i].dy,4)}"/></td>
+    </tr>`;
+  });
+  html+=`</tbody></table></div>`;
+
+  // Coordenadas absolutas
+  html+=`<h3 style="font-size:.88rem;margin-bottom:8px;color:var(--muted2);">Coordenadas absolutas</h3>
+  <div class="tbl-wrap" style="margin-bottom:16px;"><table class="sv-table">
+  <thead><tr><th>Ponto</th><th>X calc.</th><th>X aluno</th><th>Y calc.</th><th>Y aluno</th></tr></thead>
+  <tbody>`;
+  pts.forEach(p=>{
+    html+=`<tr>
+      <td><strong>${p.label}</strong></td>
+      <td style="font-family:monospace;color:var(--blue);">${fNum(p.x,3)}</td>
+      <td><input id="sv_cx_${p.label}" type="text" placeholder="${fNum(p.x,3)}"/></td>
+      <td style="font-family:monospace;color:var(--blue);">${fNum(p.y,3)}</td>
+      <td><input id="sv_cy_${p.label}" type="text" placeholder="${fNum(p.y,3)}"/></td>
+    </tr>`;
+  });
+  html+=`</tbody></table></div>`;
+
+  // Fechamentos declarados
+  html+=`<h3 style="font-size:.88rem;margin-bottom:8px;color:var(--muted2);">Fechamentos declarados</h3>
+  <div class="fg" style="max-width:640px;margin-bottom:8px;">
+    <div class="field"><label>Erro angular declarado (″)</label>
+      <input id="sv_ang_err" type="text" placeholder="${fNum(Math.abs(angErr)*3600,2)}"/></div>
+    <div class="field"><label>Erro linear declarado (m)</label>
+      <input id="sv_lin_err" type="text" placeholder="${fNum(linE,4)}"/></div>
+    <div class="field"><label>X de retorno declarado</label>
+      <input id="sv_rx" type="text" placeholder="${fNum(closed.x,3)}"/></div>
+    <div class="field"><label>Y de retorno declarado</label>
+      <input id="sv_ry" type="text" placeholder="${fNum(closed.y,3)}"/></div>
+  </div>`;
+
+  document.getElementById('svTables').innerHTML = html;
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   PREENCHER VALORES DO ALUNO A PARTIR DO EXTRATOR
+═══════════════════════════════════════════════════════════════ */
+function fillStudentValues(sv) {
+  // sv = { corrAngles:[], azimuths:[], pxArr:[], pyArr:[], coords:[], angErr, linErr }
+  const C = lastComp;
+  if(!C) return;
+  const n = C.n;
+  if(sv.corrAngles) sv.corrAngles.forEach((v,i)=>{
+    const el=document.getElementById('sv_cang_'+i);
+    if(el&&v!==null){ el.value=fDMS(v); el.classList.add('extracted'); }
+  });
+  if(sv.azimuths) sv.azimuths.forEach((v,i)=>{
+    const el=document.getElementById('sv_az_'+i);
+    if(el&&v!==null){ el.value=fDMS(v); el.classList.add('extracted'); }
+  });
+  if(sv.pxArr) sv.pxArr.forEach((v,i)=>{
+    const el=document.getElementById('sv_px_'+i);
+    if(el&&v!==null){ el.value=fNum(v,4); el.classList.add('extracted'); }
+  });
+  if(sv.pyArr) sv.pyArr.forEach((v,i)=>{
+    const el=document.getElementById('sv_py_'+i);
+    if(el&&v!==null){ el.value=fNum(v,4); el.classList.add('extracted'); }
+  });
+  if(sv.coords) sv.coords.forEach(c=>{
+    const ex=document.getElementById('sv_cx_'+c.label);
+    const ey=document.getElementById('sv_cy_'+c.label);
+    if(ex&&c.x!==null){ ex.value=fNum(c.x,3); ex.classList.add('extracted'); }
+    if(ey&&c.y!==null){ ey.value=fNum(c.y,3); ey.classList.add('extracted'); }
+  });
+  if(sv.angErr!==null){
+    const el=document.getElementById('sv_ang_err');
+    if(el){ el.value=fNum(sv.angErr,2); el.classList.add('extracted'); }
+  }
+  if(sv.linErr!==null){
+    const el=document.getElementById('sv_lin_err');
+    if(el){ el.value=fNum(sv.linErr,4); el.classList.add('extracted'); }
+  }
+}
+
+function clearStudentValues() {
+  document.querySelectorAll('#svTables input').forEach(el=>{
+    el.value=''; el.classList.remove('extracted');
+  });
+  document.getElementById('reportPanel').style.display='none';
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   GERAR RELATÓRIO DE INCONSISTÊNCIAS
+═══════════════════════════════════════════════════════════════ */
+function getStudentAngle(id) {
+  const el=document.getElementById(id);
+  if(!el||!el.value.trim()) return null;
+  return parseAngle(el.value);
+}
+function getStudentNum(id) {
+  const el=document.getElementById(id);
+  if(!el||!el.value.trim()) return null;
+  return parseFloat(el.value.replace(/\./g,'').replace(',','.'));
+}
+function getStudentNumRaw(id) {
+  const el=document.getElementById(id);
+  if(!el||!el.value.trim()) return null;
+  // aceita tanto ponto quanto vírgula decimal
+  const v = el.value.trim().replace(/[°'"″]/g,'').trim();
+  return parseFloat(v.replace(',','.'));
+}
+
+let reportItems = [];
+
+function generateReport() {
+  const C = lastComp;
+  if(!C){ alert('Calcule primeiro.'); return; }
+  const {n,labels,corrAngles,azimuths,rawP,corrections,corrP,pts,angErr,linE,closed} = C;
+
+  reportItems = [];
+  function push(label, svVal, calcVal, type) {
+    if(svVal===null) return; // não preenchido: pular
+    let diff, diffStr, sev;
+    if(type==='angle'){
+      diff = (svVal-calcVal)*3600; // arc-sec
+      const absDiff=Math.abs(diff);
+      diffStr=(diff>=0?'+':'')+diff.toFixed(1)+'″';
+      sev = absDiff<=2?'ok': absDiff<=60?'warn':'err';
+    } else {
+      diff = svVal-calcVal;
+      const absDiff=Math.abs(diff);
+      diffStr=(diff>=0?'+':'')+diff.toFixed(4)+' m';
+      sev = absDiff<=0.005?'ok': absDiff<=0.05?'warn':'err';
     }
+    reportItems.push({label, svVal, calcVal, diff, diffStr, sev, type});
+  }
 
-    function parseAngle(value) {
-      const raw = String(value ?? "").trim();
-      if (!raw) return NaN;
+  // Ângulos corrigidos
+  labels.forEach((l,i)=>{
+    const v=getStudentAngle('sv_cang_'+i);
+    push(`Ângulo corrigido em ${l}`, v, corrAngles[i], 'angle');
+  });
 
-      const normalized = raw
-        .replace(/[º°]/g, " ")
-        .replace(/[′']/g, " ")
-        .replace(/[″\"]/g, " ")
-        .replace(/,/g, ".")
-        .replace(/\s+/g, " ")
-        .trim();
+  // Azimutes
+  labels.forEach((l,i)=>{
+    const seg=`${l}-${labels[(i+1)%n]}`;
+    const v=getStudentAngle('sv_az_'+i);
+    push(`Azimute ${seg}`, v, azimuths[i], 'angle');
+  });
 
-      const parts = normalized.split(" ").filter(Boolean);
-      if (!parts.length) return NaN;
+  // Projeções brutas
+  labels.forEach((l,i)=>{
+    const seg=`${l}-${labels[(i+1)%n]}`;
+    const vx=getStudentNumRaw('sv_px_'+i);
+    const vy=getStudentNumRaw('sv_py_'+i);
+    push(`PX bruto ${seg}`, vx, rawP[i].dx, 'dist');
+    push(`PY bruto ${seg}`, vy, rawP[i].dy, 'dist');
+  });
 
-      if (parts.length === 1) {
-        const v = Number(parts[0]);
-        return Number.isFinite(v) ? v : NaN;
-      }
+  // Coordenadas
+  pts.forEach(p=>{
+    const vx=getStudentNumRaw('sv_cx_'+p.label);
+    const vy=getStudentNumRaw('sv_cy_'+p.label);
+    push(`Coordenada X do ponto ${p.label}`, vx, p.x, 'dist');
+    push(`Coordenada Y do ponto ${p.label}`, vy, p.y, 'dist');
+  });
 
-      const deg = Number(sanitizeNumberToken(parts[0]));
-      const min = Number(sanitizeNumberToken(parts[1] || "0"));
-      const sec = Number(sanitizeNumberToken(parts[2] || "0"));
-      if (![deg, min, sec].every(Number.isFinite)) return NaN;
+  // Fechamentos
+  const svAngErr=getStudentNumRaw('sv_ang_err');
+  if(svAngErr!==null){ const d=svAngErr-Math.abs(angErr)*3600; reportItems.push({label:'Erro angular declarado',svVal:svAngErr,calcVal:Math.abs(angErr)*3600,diff:d,diffStr:(d>=0?'+':'')+d.toFixed(1)+'″',sev:Math.abs(d)<=2?'ok':Math.abs(d)<=60?'warn':'err',type:'angErr'}); }
+  const svLinErr=getStudentNumRaw('sv_lin_err');
+  if(svLinErr!==null){ const d=svLinErr-linE; reportItems.push({label:'Erro linear declarado',svVal:svLinErr,calcVal:linE,diff:d,diffStr:(d>=0?'+':'')+d.toFixed(4)+' m',sev:Math.abs(d)<=0.005?'ok':Math.abs(d)<=0.05?'warn':'err',type:'dist'}); }
+  const svRx=getStudentNumRaw('sv_rx');
+  if(svRx!==null) push('X de retorno',svRx,closed.x,'dist');
+  const svRy=getStudentNumRaw('sv_ry');
+  if(svRy!==null) push('Y de retorno',svRy,closed.y,'dist');
 
-      const sign = deg < 0 ? -1 : 1;
-      return sign * (Math.abs(deg) + Math.abs(min) / 60 + Math.abs(sec) / 3600);
-    }
+  if(!reportItems.length){ alert('Nenhum valor do aluno preenchido. Preencha ao menos um campo.'); return; }
 
-    function degToDmsParts(deg) {
-      const sign = deg < 0 ? -1 : 1;
-      let abs = Math.abs(deg);
-      let d = Math.floor(abs);
-      let mFloat = (abs - d) * 60;
-      let m = Math.floor(mFloat);
-      let s = (mFloat - m) * 60;
+  renderReport();
+}
 
-      s = Math.round(s * 100) / 100;
-      if (s >= 60) {
-        s -= 60;
-        m += 1;
-      }
-      if (m >= 60) {
-        m -= 60;
-        d += 1;
-      }
+function renderReport() {
+  const errs  = reportItems.filter(i=>i.sev==='err');
+  const warns = reportItems.filter(i=>i.sev==='warn');
+  const oks   = reportItems.filter(i=>i.sev==='ok');
 
-      return { sign, d, m, s };
-    }
+  document.getElementById('reportStats').innerHTML=`
+    <span class="rstat rstat-red">❌ ${errs.length} erro(s) crítico(s)</span>
+    <span class="rstat rstat-amber">⚠️ ${warns.length} atenção</span>
+    <span class="rstat rstat-green">✅ ${oks.length} correto(s)</span>`;
 
-    function formatDMS(deg, options = {}) {
-      const { signed = false, secDecimals = 2 } = options;
-      if (!Number.isFinite(deg)) return "—";
-      const { sign, d, m, s } = degToDmsParts(deg);
-      const prefix = sign < 0 ? "-" : (signed ? "+" : "");
-      const sFormatted = s.toFixed(secDecimals).replace(/\.00$/, "").replace(/(\.\d*[1-9])0+$/, "$1");
-      return `${prefix}${d}° ${String(m).padStart(2, "0")}' ${String(sFormatted).padStart(sFormatted.includes(".") ? sFormatted.length : 2, "0")}"`;
-    }
+  const ico = {err:'❌',warn:'⚠️',ok:'✅'};
+  const cls = {err:'sev-err',warn:'sev-warn',ok:'sev-ok'};
+  const typeLabel = type => type==='angle'||type==='angErr'?'ângulo':'metros';
 
-    function formatNumber(value, decimals = 3) {
-      if (!Number.isFinite(value)) return "—";
-      return value.toLocaleString("pt-BR", {
-        minimumFractionDigits: decimals,
-        maximumFractionDigits: decimals,
+  let listHtml='';
+  const ordered=[...errs,...warns,...oks];
+  ordered.forEach(it=>{
+    const calcStr = (it.type==='angle'||it.type==='angErr') ? fDMS(it.calcVal)+` (${fNum(it.calcVal,6)}°)` : fNum(it.calcVal,5)+' m';
+    const svStr   = (it.type==='angle'||it.type==='angErr') ? (() => { try{ return fDMS(it.svVal)+` (${fNum(it.svVal,6)}°)`; }catch(e){return String(it.svVal);} })() : fNum(it.svVal,5)+' m';
+    listHtml+=`<div class="incon-item ${cls[it.sev]}">
+      <span class="incon-ico">${ico[it.sev]}</span>
+      <div class="incon-body">
+        <div class="title">${it.label}</div>
+        <div class="detail">
+          Relatório: <strong>${svStr}</strong> &nbsp;|&nbsp;
+          Correto: <strong>${calcStr}</strong>
+        </div>
+        ${it.sev!=='ok'?`<div class="diff">Diferença: ${it.diffStr}</div>`:''}
+      </div>
+    </div>`;
+  });
+  document.getElementById('inconList').innerHTML=listHtml;
+
+  // Gerar Considerações
+  let cons='Considerações:\n\n';
+  if(errs.length===0&&warns.length===0){
+    cons+='Os cálculos conferidos estão corretos e dentro da tolerância.\n';
+  } else {
+    if(errs.length>0){
+      cons+='Foram identificados os seguintes erros de cálculo:\n\n';
+      errs.forEach(e=>{
+        const cv=(e.type==='angle'||e.type==='angErr')?fDMS(e.calcVal):fNum(e.calcVal,4)+' m';
+        const sv=(e.type==='angle'||e.type==='angErr')?fDMS(e.svVal):fNum(e.svVal,4)+' m';
+        cons+=`• ${e.label}: o valor apresentado foi ${sv}, porém o correto é ${cv} (diferença de ${e.diffStr}).\n`;
       });
     }
-
-    function normalize360(deg) {
-      let value = deg % 360;
-      if (value < 0) value += 360;
-      if (Math.abs(value - 360) < 1e-10) value = 0;
-      return value;
-    }
-
-    function toRadians(deg) {
-      return deg * Math.PI / 180;
-    }
-
-    function buildDefaultLabels(n) {
-      const labels = [];
-      for (let i = 0; i < n; i += 1) {
-        if (i < 26) labels.push(String.fromCharCode(65 + i));
-        else labels.push(`P${i + 1}`);
-      }
-      return labels;
-    }
-
-    function getLabels(n) {
-      const raw = $("rotulosInput").value.trim();
-      if (!raw) return buildDefaultLabels(n);
-      const labels = raw.split(",").map(v => v.trim()).filter(Boolean);
-      if (labels.length !== n) return buildDefaultLabels(n);
-      return labels;
-    }
-
-    function buildDynamicInputs() {
-      const n = Math.max(3, Math.min(50, Number(nVerticesEl.value) || 4));
-      const iCount = Math.max(0, Math.min(200, Number($("nIrradiacoes").value) || 0));
-      nVerticesEl.value = n;
-      $("nIrradiacoes").value = iCount;
-
-      const currentLabels = getLabels(n);
-      const angleInputs = [];
-      const distanceInputs = [];
-
-      for (let i = 0; i < n; i += 1) {
-        const pointLabel = currentLabels[i] || `P${i + 1}`;
-        angleInputs.push(`
-          <div class="field">
-            <label for="angle_${i}">Ângulo em ${pointLabel}</label>
-            <input id="angle_${i}" type="text" placeholder="Ex.: 76°33'45\"" />
-          </div>
-        `);
-
-        const start = currentLabels[i] || `P${i + 1}`;
-        const end = currentLabels[(i + 1) % n] || `P${((i + 1) % n) + 1}`;
-        distanceInputs.push(`
-          <div class="field">
-            <label for="dist_${i}">Distância ${start}-${end}</label>
-            <input id="dist_${i}" type="number" step="any" min="0" placeholder="Ex.: 113.37" />
-          </div>
-        `);
-      }
-
-      dynamicInputsEl.innerHTML = `
-        <div class="mini-card">
-          <h4>Ângulos dos vértices</h4>
-          <div class="mini-list">
-            ${angleInputs.join("")}
-          </div>
-        </div>
-        <div class="mini-card">
-          <h4>Distâncias entre pontos</h4>
-          <div class="mini-list">
-            ${distanceInputs.join("")}
-          </div>
-        </div>
-      `;
-
-      const options = currentLabels.map(label => `<option value="${label}">${label}</option>`).join("");
-      if (iCount === 0) {
-        irradiationInputsEl.innerHTML = `
-          <div class="mini-card">
-            <h4>Irradiações</h4>
-            <div class="help">Nenhuma irradiação informada.</div>
-          </div>
-        `;
-        return;
-      }
-
-      const irradiationRows = [];
-      for (let i = 0; i < iCount; i += 1) {
-        irradiationRows.push(`
-          <div class="mini-card">
-            <h4>Irradiação ${i + 1}</h4>
-            <div class="mini-list">
-              <div class="field">
-                <label for="irr_name_${i}">Nome da irradiação</label>
-                <input id="irr_name_${i}" type="text" placeholder="Ex.: Ib1, I2, P2_I1" />
-              </div>
-              <div class="field">
-                <label for="irr_from_${i}">Ponto irradiado (origem)</label>
-                <select id="irr_from_${i}">${options}</select>
-              </div>
-              <div class="field">
-                <label for="irr_angle_${i}">Ângulo da irradiação</label>
-                <input id="irr_angle_${i}" type="text" placeholder="Ex.: 25°30'" />
-              </div>
-              <div class="field">
-                <label for="irr_dist_${i}">Distância da irradiação</label>
-                <input id="irr_dist_${i}" type="number" step="any" min="0" placeholder="Ex.: 35.20" />
-              </div>
-            </div>
-          </div>
-        `);
-      }
-
-      irradiationInputsEl.innerHTML = `
-        <div class="section-title">
-          <h3>Irradiações</h3>
-          <span>Defina origem, ângulo e distância de cada irradiação</span>
-        </div>
-        <div class="dynamic-grid">
-          ${irradiationRows.join("")}
-        </div>
-      `;
-    }
-
-    function setStatusCards(items) {
-      statusGridEl.innerHTML = items.map(item => `
-        <div class="stat">
-          <div class="label">${item.label}</div>
-          <div class="value ${item.className || ""}">${item.value}</div>
-        </div>
-      `).join("");
-    }
-
-    function readInputs() {
-      const n = Number(nVerticesEl.value);
-      const labels = getLabels(n);
-      const angles = [];
-      const distances = [];
-      const iCount = Math.max(0, Number($("nIrradiacoes").value) || 0);
-
-      for (let i = 0; i < n; i += 1) {
-        const angleValue = parseAngle($("angle_" + i).value);
-        const distanceValue = Number(String($("dist_" + i).value).replace(/,/g, "."));
-        if (!Number.isFinite(angleValue)) {
-          throw new Error(`Ângulo inválido no vértice ${labels[i]}.`);
-        }
-        if (!Number.isFinite(distanceValue) || distanceValue <= 0) {
-          const start = labels[i];
-          const end = labels[(i + 1) % n];
-          throw new Error(`Distância inválida no segmento ${start}-${end}.`);
-        }
-        angles.push(angleValue);
-        distances.push(distanceValue);
-      }
-
-      const irradiations = [];
-      for (let i = 0; i < iCount; i += 1) {
-        const from = $("irr_from_" + i).value;
-        const angle = parseAngle($("irr_angle_" + i).value);
-        const distance = Number(String($("irr_dist_" + i).value).replace(/,/g, "."));
-        const providedName = $("irr_name_" + i).value.trim();
-        const name = providedName || `I${i + 1}`;
-
-        if (!labels.includes(from)) {
-          throw new Error(`Origem inválida na irradiação ${name}.`);
-        }
-        if (!Number.isFinite(angle)) {
-          throw new Error(`Ângulo inválido na irradiação ${name}.`);
-        }
-        if (!Number.isFinite(distance) || distance <= 0) {
-          throw new Error(`Distância inválida na irradiação ${name}.`);
-        }
-
-        irradiations.push({ name, from, angle, distance });
-      }
-
-      const azStart = parseAngle($("azPartida").value);
-      const x0 = Number(String($("xInicial").value).replace(/,/g, "."));
-      const y0 = Number(String($("yInicial").value).replace(/,/g, "."));
-      const bArcsec = Number(String($("constB").value).replace(/,/g, "."));
-      const dLinear = Number(String($("constD").value).replace(/,/g, "."));
-
-      if (!Number.isFinite(azStart)) throw new Error("Azimute de partida inválido.");
-      if (!Number.isFinite(x0) || !Number.isFinite(y0)) throw new Error("Coordenadas iniciais inválidas.");
-      if (!Number.isFinite(bArcsec) || bArcsec < 0) throw new Error("Constante angular b inválida.");
-      if (!Number.isFinite(dLinear) || dLinear < 0) throw new Error("Constante linear d inválida.");
-
-      return {
-        n,
-        labels,
-        angles,
-        distances,
-        irradiations,
-        azStart: normalize360(azStart),
-        x0,
-        y0,
-        bArcsec,
-        dLinear,
-      };
-    }
-
-    function computeTraverse(data) {
-      const { n, labels, angles, distances, azStart, x0, y0, bArcsec, dLinear, irradiations } = data;
-
-      const theoreticalAngle = (n - 2) * 180;
-      const sumMeasuredAngles = angles.reduce((acc, v) => acc + v, 0);
-      const angularError = sumMeasuredAngles - theoreticalAngle;
-      const angularToleranceArcsec = bArcsec * Math.sqrt(n);
-      const angularErrorArcsec = Math.abs(angularError) * 3600;
-      const angularAccepted = angularErrorArcsec <= angularToleranceArcsec + 1e-12;
-      const angleCorrectionEach = -angularError / n;
-      const correctedAngles = angles.map(v => v + angleCorrectionEach);
-
-      const azimuths = new Array(n).fill(0);
-      azimuths[0] = azStart;
-      for (let i = 1; i < n; i += 1) {
-        azimuths[i] = normalize360(azimuths[i - 1] + correctedAngles[i] - 180);
-      }
-      const returnAzimuth = normalize360(azimuths[n - 1] + correctedAngles[0] - 180);
-      const azimuthClosure = normalize360(returnAzimuth - azStart);
-
-      const rawProj = distances.map((dist, i) => {
-        const az = azimuths[i];
-        const dx = dist * Math.sin(toRadians(az));
-        const dy = dist * Math.cos(toRadians(az));
-        return { dx, dy };
+    if(warns.length>0){
+      if(errs.length>0) cons+='\n';
+      cons+='Pontos que merecem atenção (divergências menores):\n\n';
+      warns.forEach(w=>{
+        const cv=(w.type==='angle'||w.type==='angErr')?fDMS(w.calcVal):fNum(w.calcVal,4)+' m';
+        const sv=(w.type==='angle'||w.type==='angErr')?fDMS(w.svVal):fNum(w.svVal,4)+' m';
+        cons+=`• ${w.label}: declarado ${sv}, esperado ${cv} (diferença de ${w.diffStr}).\n`;
       });
+    }
+  }
+  document.getElementById('consBox').textContent=cons;
+  document.getElementById('reportPanel').style.display='block';
+  document.getElementById('reportPanel').scrollIntoView({behavior:'smooth',block:'start'});
+}
 
-      const sumDx = rawProj.reduce((acc, row) => acc + row.dx, 0);
-      const sumDy = rawProj.reduce((acc, row) => acc + row.dy, 0);
-      const xPlus = rawProj.filter(r => r.dx > 0).reduce((acc, r) => acc + r.dx, 0);
-      const xMinusAbs = rawProj.filter(r => r.dx < 0).reduce((acc, r) => acc + Math.abs(r.dx), 0);
-      const yPlus = rawProj.filter(r => r.dy > 0).reduce((acc, r) => acc + r.dy, 0);
-      const yMinusAbs = rawProj.filter(r => r.dy < 0).reduce((acc, r) => acc + Math.abs(r.dy), 0);
+function copyConsideracoes() {
+  const txt=document.getElementById('consBox')?.textContent||'';
+  navigator.clipboard.writeText(txt).then(()=>alert('Texto copiado.')).catch(()=>alert('Não foi possível copiar.'));
+}
 
-      const linearError = Math.hypot(sumDx, sumDy);
-      const perimeter = distances.reduce((acc, v) => acc + v, 0);
-      const perimeterKm = perimeter / 1000;
-      const linearTolerance = dLinear * Math.sqrt(perimeterKm);
-      const linearAccepted = linearError <= linearTolerance + 1e-12;
+function exportReport() {
+  const rows=[['campo','valor_aluno','valor_calculado','diferenca','severidade']];
+  reportItems.forEach(it=>{
+    rows.push([`"${it.label}"`,`"${it.svVal}"`,`"${it.calcVal}"`,`"${it.diffStr}"`,`"${it.sev}"`]);
+  });
+  const blob=new Blob([rows.map(r=>r.join(';')).join('\n')],{type:'text/csv;charset=utf-8;'});
+  const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='inconsistencias_t1.csv';
+  document.body.appendChild(a);a.click();document.body.removeChild(a);
+}
 
-      const factorX = perimeter === 0 ? 0 : sumDx / perimeter;
-      const factorY = perimeter === 0 ? 0 : sumDy / perimeter;
+/* ═══════════════════════════════════════════════════════════════
+   CALCULAR E RENDERIZAR
+═══════════════════════════════════════════════════════════════ */
+function calculateAndRender() {
+  try {
+    const data = readInputs();
+    const C = computeTraverse(data);
+    lastComp = C;
+    setStats([
+      {label:'Fechamento angular',value:fDMS(C.angErr,{signed:true,sd:2}),cls:C.angOk?'c-green':'c-red'},
+      {label:'Tolerância angular',value:fNum(C.angTol,2)+'"',cls:C.angOk?'c-green':'c-amber'},
+      {label:'Fechamento linear', value:fNum(C.linE,4)+' m',cls:C.linOk?'c-green':'c-red'},
+      {label:'Tolerância linear', value:fNum(C.linT,4)+' m',cls:C.linOk?'c-green':'c-amber'},
+    ]);
+    renderResults(C);
+    buildStudentValuesTables(C);
+    document.getElementById('panel-resultado').style.display='';
+    document.getElementById('reportPanel').style.display='none';
+    setStep(3);
+    document.getElementById('panel-resultado').scrollIntoView({behavior:'smooth'});
+  } catch(err) {
+    setStats([
+      {label:'Erro',value:err.message,cls:'c-red'},{label:'—',value:'—'},{label:'—',value:'—'},{label:'—',value:'—'}
+    ]);
+    document.getElementById('resultBody').innerHTML=`<div style="color:var(--red);padding:20px;">${err.message}</div>`;
+    document.getElementById('panel-resultado').style.display='';
+  }
+}
 
-      const corrections = distances.map(dist => ({
-        corrX: -factorX * dist,
-        corrY: -factorY * dist,
-      }));
+/* ═══════════════════════════════════════════════════════════════
+   EXPORTAR CSV
+═══════════════════════════════════════════════════════════════ */
+function exportCsv() {
+  if(!lastComp){alert('Calcule primeiro.');return;}
+  const C=lastComp;
+  const hdr='#;Segmento;Ang.Medido;Correcao;Ang.Corrigido;Distancia;Azimute;PX.bruto;PY.bruto;Corr.X;Corr.Y;PX.corr;PY.corr;X.ini;Y.ini;X.fim;Y.fim';
+  const rows=C.rows.map(r=>[r.i,r.seg,r.angMeas,r.angCorrEach,r.angCorr,r.dist,r.az,r.rawDx,r.rawDy,r.cx,r.cy,r.cdx,r.cdy,r.xS,r.yS,r.xE,r.yE].join(';'));
+  const pts='Ponto;X;Y\n'+C.pts.map(p=>`${p.label};${p.x};${p.y}`).join('\n');
+  const blob=new Blob([[hdr,...rows,'',pts].join('\n')],{type:'text/csv;charset=utf-8;'});
+  const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='t1_planimetria.csv';
+  document.body.appendChild(a);a.click();document.body.removeChild(a);
+}
 
-      const correctedProj = rawProj.map((row, i) => ({
-        dx: row.dx + corrections[i].corrX,
-        dy: row.dy + corrections[i].corrY,
-      }));
+/* ═══════════════════════════════════════════════════════════════
+   EXEMPLO DA AULA
+═══════════════════════════════════════════════════════════════ */
+function loadExample() {
+  document.getElementById('nVert').value=4;
+  document.getElementById('nIrr').value=3;
+  document.getElementById('azPartida').value="100°";
+  document.getElementById('xIni').value=100;
+  document.getElementById('yIni').value=100;
+  document.getElementById('constB').value=180;
+  document.getElementById('constD').value=2.20;
+  document.getElementById('labels').value='A,B,C,D';
+  buildDynamic();
+  [["76°33'","113°03'","54°05'","116°16'"],[113.37,119.22,145.10,79.56]].forEach((arr,t)=>{
+    arr.forEach((v,i)=>{ const el=document.getElementById((t?'dst_':'ang_')+i); if(el)el.value=v; });
+  });
+  [{nm:'Ib1',or:'B',an:"25°00'",ds:38.5},{nm:'Ib2',or:'B',an:"62°30'",ds:24.8},{nm:'Id1',or:'D',an:"40°15'",ds:31.2}]
+    .forEach((irr,i)=>{
+      document.getElementById('irr_nm_'+i).value=irr.nm;
+      document.getElementById('irr_or_'+i).value=irr.or;
+      document.getElementById('irr_an_'+i).value=irr.an;
+      document.getElementById('irr_ds_'+i).value=irr.ds;
+    });
+  calculateAndRender();
+}
 
-      const correctedDxSum = correctedProj.reduce((acc, row) => acc + row.dx, 0);
-      const correctedDySum = correctedProj.reduce((acc, row) => acc + row.dy, 0);
+/* ═══════════════════════════════════════════════════════════════
+   STEPS INDICATOR
+═══════════════════════════════════════════════════════════════ */
+function setStep(s) {
+  for(let i=1;i<=4;i++){
+    const el=document.getElementById('step'+i);
+    if(!el)continue;
+    el.classList.remove('active','done');
+    if(i<s) el.classList.add('done');
+    if(i===s) el.classList.add('active');
+  }
+}
 
-      const pointCoords = [{ label: labels[0], x: x0, y: y0 }];
-      for (let i = 0; i < n - 1; i += 1) {
-        const prev = pointCoords[i];
-        pointCoords.push({
-          label: labels[i + 1],
-          x: prev.x + correctedProj[i].dx,
-          y: prev.y + correctedProj[i].dy,
-        });
-      }
+/* ═══════════════════════════════════════════════════════════════
+   PDF.js EXTRAÇÃO
+═══════════════════════════════════════════════════════════════ */
+function log(msg,cls){
+  const b=document.getElementById('logBox');
+  b.style.display='block';
+  b.innerHTML+=`<span class="${cls||''}">${msg}</span>\n`;
+  b.scrollTop=b.scrollHeight;
+}
 
-      const closedCheck = {
-        x: pointCoords[n - 1].x + correctedProj[n - 1].dx,
-        y: pointCoords[n - 1].y + correctedProj[n - 1].dy,
-      };
+// ── Parsers específicos para T1 ──────────────────────────────
 
-      const rows = distances.map((dist, i) => {
-        const start = labels[i];
-        const end = labels[(i + 1) % n];
-        const startPoint = i === 0 ? pointCoords[0] : pointCoords[i];
-        const endPoint = i === n - 1 ? { label: labels[0], x: closedCheck.x, y: closedCheck.y } : pointCoords[i + 1];
-        return {
-          index: i + 1,
-          segment: `${start}-${end}`,
-          angleVertex: labels[i],
-          measuredAngle: angles[i],
-          correctedAngle: correctedAngles[i],
-          angleCorrection: angleCorrectionEach,
-          distance: dist,
-          azimuth: azimuths[i],
-          rawDx: rawProj[i].dx,
-          rawDy: rawProj[i].dy,
-          corrX: corrections[i].corrX,
-          corrY: corrections[i].corrY,
-          corrDx: correctedProj[i].dx,
-          corrDy: correctedProj[i].dy,
-          xStart: startPoint.x,
-          yStart: startPoint.y,
-          xEnd: endPoint.x,
-          yEnd: endPoint.y,
-        };
+const RE_DMS = /([+-]?\d{1,3})[°º]\s*(\d{2})['′]\s*(?:(\d{1,2}(?:[.,]\d+)?)\s*[""″'])?/g;
+
+function allDMS(text) {
+  const r=[];
+  let m;
+  RE_DMS.lastIndex=0;
+  while((m=RE_DMS.exec(text))!==null){
+    const sign=m[1].startsWith('-')?-1:1;
+    const d=Math.abs(parseInt(m[1]));
+    const min=parseInt(m[2]);
+    const sec=m[3]?parseFloat(m[3].replace(',','.')):0;
+    r.push({raw:m[0],deg:sign*(d+min/60+sec/3600),idx:m.index});
+  }
+  return r;
+}
+
+function allDecimals(text) {
+  // números como 113.37 ou 113,37 (potenciais distâncias ou coordenadas)
+  const re=/\b(\d{1,5})[,.](\d{2,5})\b/g;
+  const r=[];
+  let m;
+  while((m=re.exec(text))!==null){
+    const v=parseFloat(`${m[1]}.${m[2]}`);
+    r.push({raw:m[0],val:v,idx:m.index});
+  }
+  // dedup por raw
+  const seen=new Set();
+  return r.filter(x=>seen.has(x.raw)?false:(seen.add(x.raw),true));
+}
+
+function findAzimuth(text, allAngles) {
+  // 1) procura contexto explícito
+  const ctx=/(?:azimute[^\n]{0,40}?partida|az[.\s]*(?:de\s)?partida|az[.\s]*inicial)[^\n]{0,10}?(\d{1,3}[°º]\d{2}['′](?:\d{2}[""″'])?)/i;
+  const m=ctx.exec(text);
+  if(m){ const v=parseAngle(m[1]); if(isFinite(v)) return {val:v,raw:m[1],confidence:'high'}; }
+  // 2) primeiro ângulo no intervalo razoável de azimute (0-360, muito preciso)
+  const candidate=allAngles.find(a=>a.deg>=0&&a.deg<360&&a.deg!==0);
+  if(candidate) return {val:candidate.deg,raw:candidate.raw,confidence:'low'};
+  return null;
+}
+
+function findInputAngles(text, allAngles, n) {
+  // Procura sequência de n ângulos entre ~30° e 340° (ângulos de vértice)
+  // Filtra ângulos muito pequenos (correções) ou maiores que 360°
+  const candidates = allAngles.filter(a=>a.deg>=30&&a.deg<=340);
+  // Tenta encontrar grupo de n valores consecutivos onde soma ≈ (n-2)*180
+  const expected = (n-2)*180;
+  const tol = n*1; // 1° por vértice de tolerância
+  for(let s=0;s<=candidates.length-n;s++){
+    const grp=candidates.slice(s,s+n);
+    const sum=grp.reduce((a,g)=>a+g.deg,0);
+    if(Math.abs(sum-expected)<=tol) return {values:grp.map(g=>g.deg),raws:grp.map(g=>g.raw),confidence:'high'};
+  }
+  // Fallback: pega os primeiros n candidatos
+  if(candidates.length>=n) return {values:candidates.slice(0,n).map(g=>g.deg),raws:candidates.slice(0,n).map(g=>g.raw),confidence:'low'};
+  return null;
+}
+
+function findDistances(allDec, n) {
+  // Distâncias: entre 5 e 5000 m
+  const candidates=allDec.filter(d=>d.val>=5&&d.val<=5000);
+  if(candidates.length===n) return {values:candidates.map(d=>d.val),confidence:'high'};
+  // Tenta encontrar grupo de n com soma coerente (perímetro > 10m)
+  for(let s=0;s<=candidates.length-n;s++){
+    const grp=candidates.slice(s,s+n);
+    const sum=grp.reduce((a,g)=>a+g.val,0);
+    if(sum>10) return {values:grp.map(d=>d.val),confidence:'medium'};
+  }
+  if(candidates.length>=n) return {values:candidates.slice(0,n).map(d=>d.val),confidence:'low'};
+  return null;
+}
+
+// Tenta extrair valores intermediários do aluno
+function extractStudentIntermediates(text, n, labels, inputAngles) {
+  const allAng = allDMS(text);
+  const allDec = allDecimals(text);
+
+  // Remove ângulos de entrada da lista para buscar corrigidos/azimutes
+  const inputSet = new Set((inputAngles||[]).map(v=>parseFloat(v.toFixed(4))));
+  const remaining = allAng.filter(a=>!inputSet.has(parseFloat(a.deg.toFixed(4))));
+
+  // Ângulos corrigidos: mesma quantidade que n, próximos dos medidos + correção pequena
+  // (diferença máxima de 5° em relação aos medidos)
+  let corrAngles=null, azimutes=null;
+  if(inputAngles&&remaining.length>=n){
+    const corrCands=remaining.filter(a=>{
+      return inputAngles.some(ia=>Math.abs(ia-a.deg)<5);
+    });
+    if(corrCands.length>=n){
+      corrAngles=corrCands.slice(0,n).map(a=>a.deg);
+    }
+    // Azimutes: entre 0 e 360, diferentes dos corrigidos
+    const corrSet=new Set((corrAngles||[]).map(v=>parseFloat(v.toFixed(4))));
+    const azCands=remaining.filter(a=>a.deg>=0&&a.deg<360&&!corrSet.has(parseFloat(a.deg.toFixed(4))));
+    if(azCands.length>=n) azimutes=azCands.slice(0,n).map(a=>a.deg);
+  }
+
+  // Projeções: decimais positivos e negativos no range de distâncias curtas (-999 a 999)
+  const projCands=allDec.filter(d=>Math.abs(d.val)<=999&&Math.abs(d.val)>=0.001);
+  // Pares px/py: espera 2n valores
+  let pxArr=null,pyArr=null;
+  if(projCands.length>=n*2){
+    pxArr=projCands.slice(0,n).map(d=>d.val);
+    pyArr=projCands.slice(n,n*2).map(d=>d.val);
+  }
+
+  // Coordenadas: pares de valores no range típico (x0±500, y0±500)
+  const coordCands=allDec.filter(d=>d.val>=0&&d.val<=99999);
+  let coords=null;
+  if(coordCands.length>=n*2){
+    coords=labels.map((_,i)=>({label:labels[i],x:coordCands[i*2]?.val??null,y:coordCands[i*2+1]?.val??null}));
+  }
+
+  // Erro angular (segundos): decimal pequeno
+  const angErrCands=allDec.filter(d=>d.val>0&&d.val<3600);
+  const angErr=angErrCands[0]?.val??null;
+
+  // Erro linear (metros): muito pequeno
+  const linErrCands=allDec.filter(d=>d.val>0&&d.val<10);
+  const linErr=linErrCands[0]?.val??null;
+
+  return {corrAngles,azimutes,pxArr,pyArr,coords,angErr,linErr};
+}
+
+async function extractPDF(file) {
+  document.getElementById('logBox').innerHTML='';
+  document.getElementById('chipsBox').style.display='none';
+  document.getElementById('chips').innerHTML='';
+  document.getElementById('rawText').value='';
+  document.getElementById('rawText').style.display='none';
+  setStep(1);
+
+  if(typeof pdfjsLib==='undefined'){
+    log('❌ PDF.js não carregou. Verifique a conexão e recarregue.','log-err');
+    return;
+  }
+  pdfjsLib.GlobalWorkerOptions.workerSrc='https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+
+  try {
+    log(`📄 ${file.name}  (${(file.size/1024).toFixed(1)} KB)`);
+    const ab = await file.arrayBuffer();
+    const pdf = await pdfjsLib.getDocument({data:ab}).promise;
+    log(`✅ PDF carregado — ${pdf.numPages} página(s)`, 'log-ok');
+
+    let full='';
+    for(let p=1;p<=pdf.numPages;p++){
+      const pg = await pdf.getPage(p);
+      const ct = await pg.getTextContent();
+      full += ct.items.map(i=>i.str).join(' ') + '\n';
+    }
+    const chars=full.replace(/\s/g,'').length;
+    document.getElementById('rawText').value=full;
+
+    if(chars<80){
+      log('⚠️ Pouco texto extraído. PDF pode ter tabelas como imagens.','log-warn');
+      log('   → Preencha os campos manualmente.','log-warn');
+      document.getElementById('chipsBox').style.display='block';
+      return;
+    }
+    log(`✅ ${chars} caracteres extraídos.`,'log-ok');
+
+    const n = getN();
+    const labels = getLabels();
+    const chips = document.getElementById('chips');
+    const addChip=(txt,cls)=>{ const c=document.createElement('span'); c.className='chip '+cls; c.textContent=txt; chips.appendChild(c); };
+
+    // ── Azimute de partida ──────────────────────────
+    const dmsAll = allDMS(full);
+    const decAll = allDecimals(full);
+    const azResult = findAzimuth(full, dmsAll);
+    if(azResult){
+      log(`✅ Azimute de partida: ${azResult.raw} (${azResult.confidence})`,'log-ok');
+      document.getElementById('azPartida').value=azResult.raw;
+      document.getElementById('azPartida').classList.add('extracted');
+      addChip(`Az: ${azResult.raw}`, azResult.confidence==='high'?'chip-green':'chip-amber');
+    } else {
+      log('⚠️ Azimute de partida não detectado. Insira manualmente.','log-warn');
+      addChip('Azimute: não detectado','chip-amber');
+    }
+
+    // ── Ângulos observados ──────────────────────────
+    const angResult = findInputAngles(full, dmsAll, n);
+    if(angResult){
+      log(`${angResult.confidence==='high'?'✅':'⚠️'} Ângulos observados (${angResult.confidence}): ${angResult.raws.join(' | ')}`,'log-ok');
+      buildDynamic();
+      angResult.values.forEach((v,i)=>{
+        const el=document.getElementById('ang_'+i);
+        if(el){ el.value=angResult.raws[i]; el.classList.add('extracted'); }
       });
+      addChip(`Ângulos: ${n} detectados`, angResult.confidence==='high'?'chip-green':'chip-amber');
+    } else {
+      log(`⚠️ Não foi possível detectar ${n} ângulos de vértice. Insira manualmente.`,'log-warn');
+      addChip('Ângulos: não detectados','chip-amber');
+    }
 
-      const pointMap = new Map(pointCoords.map(p => [p.label, p]));
-      const irradiationRows = irradiations.map((irr, idx) => {
-        const baseIndex = labels.indexOf(irr.from);
-        const baseAz = baseIndex >= 0 ? azimuths[baseIndex] : NaN;
-        const azimuth = normalize360(baseAz + irr.angle - 180);
-        const basePoint = pointMap.get(irr.from);
-        const dx = irr.distance * Math.sin(toRadians(azimuth));
-        const dy = irr.distance * Math.cos(toRadians(azimuth));
-        const x = basePoint.x + dx;
-        const y = basePoint.y + dy;
-        return {
-          index: idx + 1,
-          name: irr.name,
-          from: irr.from,
-          baseAzimuth: baseAz,
-          angle: irr.angle,
-          azimuth,
-          distance: irr.distance,
-          dx,
-          dy,
-          xBase: basePoint.x,
-          yBase: basePoint.y,
-          x,
-          y,
-        };
+    // ── Distâncias ──────────────────────────────────
+    const distResult = findDistances(decAll, n);
+    if(distResult){
+      log(`${distResult.confidence==='high'?'✅':'⚠️'} Distâncias (${distResult.confidence}): ${distResult.values.join(' | ')}`,'log-ok');
+      distResult.values.forEach((v,i)=>{
+        const el=document.getElementById('dst_'+i);
+        if(el){ el.value=v; el.classList.add('extracted'); }
       });
-
-      return {
-        input: data,
-        labels,
-        theoreticalAngle,
-        sumMeasuredAngles,
-        angularError,
-        angularErrorArcsec,
-        angularToleranceArcsec,
-        angularAccepted,
-        angleCorrectionEach,
-        correctedAngles,
-        azimuths,
-        returnAzimuth,
-        azimuthClosure,
-        rawProj,
-        xPlus,
-        xMinusAbs,
-        yPlus,
-        yMinusAbs,
-        sumDx,
-        sumDy,
-        linearError,
-        perimeter,
-        perimeterKm,
-        linearTolerance,
-        linearAccepted,
-        factorX,
-        factorY,
-        corrections,
-        correctedProj,
-        correctedDxSum,
-        correctedDySum,
-        pointCoords,
-        closedCheck,
-        rows,
-        irradiationRows,
-      };
+      addChip(`Distâncias: ${n} detectadas`, distResult.confidence==='high'?'chip-green':'chip-amber');
+    } else {
+      log('⚠️ Distâncias não detectadas. Insira manualmente.','log-warn');
+      addChip('Distâncias: não detectadas','chip-amber');
     }
 
-    function renderSummary(computation) {
-      const angularStatusClass = computation.angularAccepted ? "ok" : "danger";
-      const linearStatusClass = computation.linearAccepted ? "ok" : "danger";
+    // ── Valores intermediários do aluno ─────────────
+    const inputAngVals = angResult?.values||null;
+    const sv = extractStudentIntermediates(full, n, labels, inputAngVals);
+    let svFound=0;
+    if(sv.corrAngles){ svFound++; addChip('Âng. corrigidos detectados','chip-blue'); }
+    if(sv.azimutes)  { svFound++; addChip('Azimutes detectados','chip-blue'); }
+    log(`ℹ️ Valores intermediários do aluno: ${svFound} grupos detectados.`,'log-info');
 
-      setStatusCards([
-        {
-          label: "Fechamento angular",
-          value: `${formatDMS(computation.angularError, { signed: true, secDecimals: 2 })}`,
-          className: angularStatusClass,
-        },
-        {
-          label: "Tolerância angular",
-          value: `${formatNumber(computation.angularToleranceArcsec, 2)}\"`,
-          className: computation.angularAccepted ? "ok" : "warn",
-        },
-        {
-          label: "Fechamento linear",
-          value: `${formatNumber(computation.linearError, 4)} m`,
-          className: linearStatusClass,
-        },
-        {
-          label: "Tolerância linear",
-          value: `${formatNumber(computation.linearTolerance, 4)} m`,
-          className: computation.linearAccepted ? "ok" : "warn",
-        },
-      ]);
+    document.getElementById('chipsBox').style.display='block';
+    setStep(2);
+    log('ℹ️ Revise os campos em verde e calcule.','log-info');
 
-      const resultHtml = `
-        <div class="summary-grid">
-          <div class="summary-card">
-            <h4>Etapa 1 · Fechamento angular</h4>
-            <dl>
-              <dt>n</dt><dd>${computation.input.n}</dd>
-              <dt>Soma medida</dt><dd>${formatDMS(computation.sumMeasuredAngles)}</dd>
-              <dt>Soma teórica</dt><dd>${formatDMS(computation.theoreticalAngle)}</dd>
-              <dt>Erro angular</dt><dd>${formatDMS(computation.angularError, { signed: true, secDecimals: 2 })}</dd>
-              <dt>Tolerância</dt><dd>${formatNumber(computation.angularToleranceArcsec, 2)}\"</dd>
-              <dt>Situação</dt><dd class="${computation.angularAccepted ? "ok" : "danger"}">${computation.angularAccepted ? "Dentro da tolerância" : "Fora da tolerância"}</dd>
-            </dl>
-          </div>
+    // Armazena para preencher após buildStudentValuesTables ser chamado
+    window._pendingSV = sv;
 
-          <div class="summary-card">
-            <h4>Etapa 2 · Fechamento linear</h4>
-            <dl>
-              <dt>ΣX</dt><dd>${formatNumber(computation.sumDx, 4)} m</dd>
-              <dt>ΣY</dt><dd>${formatNumber(computation.sumDy, 4)} m</dd>
-              <dt>EL</dt><dd>${formatNumber(computation.linearError, 4)} m</dd>
-              <dt>Perímetro</dt><dd>${formatNumber(computation.perimeter, 3)} m</dd>
-              <dt>Tolerância</dt><dd>${formatNumber(computation.linearTolerance, 4)} m</dd>
-              <dt>Situação</dt><dd class="${computation.linearAccepted ? "ok" : "danger"}">${computation.linearAccepted ? "Dentro da tolerância" : "Fora da tolerância"}</dd>
-            </dl>
-          </div>
+  } catch(err) {
+    log(`❌ Erro ao processar PDF: ${err.message}`,'log-err');
+  }
+}
 
-          <div class="summary-card">
-            <h4>Etapa 3 · Fatores e retorno</h4>
-            <dl>
-              <dt>Fator X</dt><dd>${formatNumber(computation.factorX, 8)}</dd>
-              <dt>Fator Y</dt><dd>${formatNumber(computation.factorY, 8)}</dd>
-              <dt>Az. de retorno</dt><dd>${formatDMS(computation.returnAzimuth)}</dd>
-              <dt>Fech. azimute</dt><dd>${formatDMS(computation.azimuthClosure, { signed: false, secDecimals: 2 })}</dd>
-              <dt>Retorno X</dt><dd>${formatNumber(computation.closedCheck.x, 3)}</dd>
-              <dt>Retorno Y</dt><dd>${formatNumber(computation.closedCheck.y, 3)}</dd>
-            </dl>
-          </div>
-        </div>
+/* ═══════════════════════════════════════════════════════════════
+   EVENTOS
+═══════════════════════════════════════════════════════════════ */
+const uz=document.getElementById('uploadZone');
+const pf=document.getElementById('pdfFile');
 
-        <div class="section">
-          <div class="section-title">
-            <h3>Planilha por segmento</h3>
-            <span>Todas as etapas consolidadas</span>
-          </div>
-          <div class="table-wrap">
-            <table>
-              <thead>
-                <tr>
-                  <th>#</th>
-                  <th>Segmento</th>
-                  <th>Ângulo medido</th>
-                  <th>Correção angular</th>
-                  <th>Ângulo corrigido</th>
-                  <th>Distância</th>
-                  <th>Azimute</th>
-                  <th>PX bruto</th>
-                  <th>PY bruto</th>
-                  <th>Corr. X</th>
-                  <th>Corr. Y</th>
-                  <th>PX corrigido</th>
-                  <th>PY corrigido</th>
-                  <th>X início</th>
-                  <th>Y início</th>
-                  <th>X fim</th>
-                  <th>Y fim</th>
-                </tr>
-              </thead>
-              <tbody>
-                ${computation.rows.map(row => `
-                  <tr>
-                    <td>${row.index}</td>
-                    <td>${row.segment}</td>
-                    <td>${formatDMS(row.measuredAngle)}</td>
-                    <td>${formatDMS(row.angleCorrection, { signed: true, secDecimals: 2 })}</td>
-                    <td>${formatDMS(row.correctedAngle)}</td>
-                    <td>${formatNumber(row.distance, 3)}</td>
-                    <td>${formatDMS(row.azimuth)}</td>
-                    <td>${formatNumber(row.rawDx, 3)}</td>
-                    <td>${formatNumber(row.rawDy, 3)}</td>
-                    <td>${formatNumber(row.corrX, 4)}</td>
-                    <td>${formatNumber(row.corrY, 4)}</td>
-                    <td>${formatNumber(row.corrDx, 3)}</td>
-                    <td>${formatNumber(row.corrDy, 3)}</td>
-                    <td>${formatNumber(row.xStart, 3)}</td>
-                    <td>${formatNumber(row.yStart, 3)}</td>
-                    <td>${formatNumber(row.xEnd, 3)}</td>
-                    <td>${formatNumber(row.yEnd, 3)}</td>
-                  </tr>
-                `).join("")}
-              </tbody>
-            </table>
-          </div>
-        </div>
+uz.addEventListener('dragover',e=>{e.preventDefault();uz.classList.add('drag');});
+uz.addEventListener('dragleave',()=>uz.classList.remove('drag'));
+uz.addEventListener('drop',e=>{
+  e.preventDefault();uz.classList.remove('drag');
+  const f=e.dataTransfer?.files?.[0];
+  if(f&&f.type==='application/pdf') extractPDF(f);
+  else log('⚠️ Arquivo não é um PDF.','log-warn');
+});
+pf.addEventListener('change',e=>{ const f=e.target.files?.[0]; if(f) extractPDF(f); });
 
-        <div class="section">
-          <div class="section-title">
-            <h3>Detalhamento das etapas</h3>
-            <span>Resumo organizado como na aula</span>
-          </div>
-          <div class="summary-grid">
-            <div class="summary-card">
-              <h4>Ângulos</h4>
-              <dl>
-                <dt>Correção por ângulo</dt><dd>${formatDMS(computation.angleCorrectionEach, { signed: true, secDecimals: 2 })}</dd>
-                <dt>Erro angular</dt><dd>${formatNumber(computation.angularErrorArcsec, 2)}\"</dd>
-                <dt>Tolerância</dt><dd>${formatNumber(computation.angularToleranceArcsec, 2)}\"</dd>
-              </dl>
-            </div>
-            <div class="summary-card">
-              <h4>Projeções brutas</h4>
-              <dl>
-                <dt>Σ(X+)</dt><dd>${formatNumber(computation.xPlus, 3)}</dd>
-                <dt>Σ(|X-|)</dt><dd>${formatNumber(computation.xMinusAbs, 3)}</dd>
-                <dt>Σ(Y+)</dt><dd>${formatNumber(computation.yPlus, 3)}</dd>
-                <dt>Σ(|Y-|)</dt><dd>${formatNumber(computation.yMinusAbs, 3)}</dd>
-              </dl>
-            </div>
-            <div class="summary-card">
-              <h4>Checagem final</h4>
-              <dl>
-                <dt>Σ(PXcorr)</dt><dd>${formatNumber(computation.correctedDxSum, 8)}</dd>
-                <dt>Σ(PYcorr)</dt><dd>${formatNumber(computation.correctedDySum, 8)}</dd>
-                <dt>X retorno</dt><dd>${formatNumber(computation.closedCheck.x, 3)}</dd>
-                <dt>Y retorno</dt><dd>${formatNumber(computation.closedCheck.y, 3)}</dd>
-              </dl>
-            </div>
-          </div>
-        </div>
+document.getElementById('btnToggleRaw').addEventListener('click',()=>{
+  const ta=document.getElementById('rawText');
+  ta.style.display=ta.style.display==='none'?'block':'none';
+});
+document.getElementById('btnClearPdf').addEventListener('click',()=>{
+  pf.value='';
+  document.getElementById('logBox').innerHTML='';
+  document.getElementById('logBox').style.display='none';
+  document.getElementById('chipsBox').style.display='none';
+  document.querySelectorAll('input.extracted').forEach(el=>{ el.value=''; el.classList.remove('extracted'); });
+  window._pendingSV=null;
+  setStep(1);
+});
 
-        <div class="section">
-          <div class="section-title">
-            <h3>Coordenadas absolutas</h3>
-            <span>Pontos calculados a partir do ponto inicial</span>
-          </div>
-          <div class="table-wrap">
-            <table style="min-width: 540px;">
-              <thead>
-                <tr>
-                  <th>Ponto</th>
-                  <th>X</th>
-                  <th>Y</th>
-                </tr>
-              </thead>
-              <tbody>
-                ${computation.pointCoords.map(point => `
-                  <tr>
-                    <td>${point.label}</td>
-                    <td>${formatNumber(point.x, 3)}</td>
-                    <td>${formatNumber(point.y, 3)}</td>
-                  </tr>
-                `).join("")}
-              </tbody>
-            </table>
-          </div>
-        </div>
+/* ═══════════════════════════════════════════════════════════════
+   HOOK: Após calcular, tenta preencher valores do aluno do PDF
+═══════════════════════════════════════════════════════════════ */
+const _origCalc=calculateAndRender;
+// eslint-disable-next-line no-global-assign
+function calculateAndRenderHooked(){
+  _origCalc();
+  if(window._pendingSV&&lastComp){
+    fillStudentValues(window._pendingSV);
+    window._pendingSV=null;
+  }
+}
+document.querySelector('[onclick="calculateAndRender()"]').setAttribute('onclick','calculateAndRenderHooked()');
 
-        <div class="section">
-          <div class="section-title">
-            <h3>Irradiações calculadas</h3>
-            <span>Pontos irradiados sem correções</span>
-          </div>
-          <div class="table-wrap">
-            <table style="min-width: 860px;">
-              <thead>
-                <tr>
-                  <th>#</th>
-                  <th>Nome</th>
-                  <th>Origem</th>
-                  <th>Azimute base</th>
-                  <th>Ângulo da irradiação</th>
-                  <th>Azimute final</th>
-                  <th>Distância</th>
-                  <th>ΔX</th>
-                  <th>ΔY</th>
-                  <th>X</th>
-                  <th>Y</th>
-                </tr>
-              </thead>
-              <tbody>
-                ${computation.irradiationRows.length ? computation.irradiationRows.map(row => `
-                  <tr>
-                    <td>${row.index}</td>
-                    <td>${row.name}</td>
-                    <td>${row.from}</td>
-                    <td>${formatDMS(row.baseAzimuth)}</td>
-                    <td>${formatDMS(row.angle)}</td>
-                    <td>${formatDMS(row.azimuth)}</td>
-                    <td>${formatNumber(row.distance, 3)}</td>
-                    <td>${formatNumber(row.dx, 3)}</td>
-                    <td>${formatNumber(row.dy, 3)}</td>
-                    <td>${formatNumber(row.x, 3)}</td>
-                    <td>${formatNumber(row.y, 3)}</td>
-                  </tr>
-                `).join("") : `<tr><td colspan="11">Nenhuma irradiação informada.</td></tr>`}
-              </tbody>
-            </table>
-          </div>
-        </div>
-
-        <div class="section">
-          <div class="section-title">
-            <h3>Gráfico cartesiano</h3>
-            <span>Poligonal com coordenadas absolutas corrigidas</span>
-          </div>
-          <div class="chart-card">
-            <svg id="plotSvg" viewBox="0 0 1000 620" xmlns="http://www.w3.org/2000/svg" aria-label="Gráfico cartesiano da poligonal"></svg>
-            <div class="legend">
-              <span class="legend-item"><span class="legend-line"></span> Poligonal</span>
-              <span class="legend-item"><span class="legend-point"></span> Pontos calculados</span>
-            </div>
-          </div>
-        </div>
-      `;
-
-      emptyStateEl.style.display = "none";
-      resultsContentEl.style.display = "block";
-      resultsContentEl.innerHTML = resultHtml;
-      renderPlot(computation);
-    }
-
-    function renderPlot(computation) {
-      const svg = $("plotSvg");
-      if (!svg) return;
-
-      const polyPoints = [...computation.pointCoords, { ...computation.pointCoords[0] }];
-      const allPoints = [...polyPoints, ...computation.irradiationRows.map(r => ({ label: r.name, x: r.x, y: r.y, isIrr: true }))];
-      const xs = allPoints.map(p => p.x);
-      const ys = allPoints.map(p => p.y);
-      const minX = Math.min(...xs);
-      const maxX = Math.max(...xs);
-      const minY = Math.min(...ys);
-      const maxY = Math.max(...ys);
-
-      let rangeX = maxX - minX;
-      let rangeY = maxY - minY;
-      if (rangeX === 0) rangeX = 1;
-      if (rangeY === 0) rangeY = 1;
-
-      const padFactor = 0.18;
-      const span = Math.max(rangeX, rangeY);
-      const extra = span * padFactor;
-      const xMin = minX - extra;
-      const xMax = maxX + extra;
-      const yMin = minY - extra;
-      const yMax = maxY + extra;
-
-      const width = 1000;
-      const height = 620;
-      const margin = 70;
-
-      const scaleX = (value) => margin + ((value - xMin) / (xMax - xMin)) * (width - 2 * margin);
-      const scaleY = (value) => height - margin - ((value - yMin) / (yMax - yMin)) * (height - 2 * margin);
-
-      const gridLines = 6;
-      let content = "";
-
-      for (let i = 0; i <= gridLines; i += 1) {
-        const tx = margin + (i / gridLines) * (width - 2 * margin);
-        const ty = margin + (i / gridLines) * (height - 2 * margin);
-        const xv = xMin + (i / gridLines) * (xMax - xMin);
-        const yv = yMax - (i / gridLines) * (yMax - yMin);
-        content += `<line x1="${tx}" y1="${margin}" x2="${tx}" y2="${height - margin}" stroke="rgba(148,163,184,.14)" stroke-width="1" />`;
-        content += `<line x1="${margin}" y1="${ty}" x2="${width - margin}" y2="${ty}" stroke="rgba(148,163,184,.14)" stroke-width="1" />`;
-        content += `<text x="${tx}" y="${height - margin + 24}" fill="rgba(226,232,240,.78)" font-size="13" text-anchor="middle">${formatNumber(xv, 1)}</text>`;
-        content += `<text x="${margin - 12}" y="${ty + 4}" fill="rgba(226,232,240,.78)" font-size="13" text-anchor="end">${formatNumber(yv, 1)}</text>`;
-      }
-
-      content += `<line x1="${margin}" y1="${height - margin}" x2="${width - margin}" y2="${height - margin}" stroke="rgba(226,232,240,.6)" stroke-width="1.5" />`;
-      content += `<line x1="${margin}" y1="${margin}" x2="${margin}" y2="${height - margin}" stroke="rgba(226,232,240,.6)" stroke-width="1.5" />`;
-      content += `<text x="${width - margin + 16}" y="${height - margin + 4}" fill="white" font-size="14">X</text>`;
-      content += `<text x="${margin - 4}" y="${margin - 14}" fill="white" font-size="14">Y</text>`;
-
-      const polylinePoints = polyPoints.map(p => `${scaleX(p.x)},${scaleY(p.y)}`).join(" ");
-      content += `<polyline fill="none" stroke="#38bdf8" stroke-width="3.5" points="${polylinePoints}" />`;
-
-      computation.pointCoords.forEach((point, index) => {
-        const cx = scaleX(point.x);
-        const cy = scaleY(point.y);
-        content += `<circle cx="${cx}" cy="${cy}" r="6.5" fill="#22c55e" stroke="white" stroke-width="2" />`;
-        content += `<text x="${cx + 12}" y="${cy - 12}" fill="white" font-size="14" font-weight="700">${point.label}</text>`;
-        if (index < computation.pointCoords.length - 1) {
-          const next = computation.pointCoords[index + 1];
-          const mx = (cx + scaleX(next.x)) / 2;
-          const my = (cy + scaleY(next.y)) / 2;
-          content += `<text x="${mx}" y="${my - 8}" fill="#f8fafc" font-size="12" text-anchor="middle">${computation.rows[index].segment}</text>`;
-        }
-      });
-
-      computation.irradiationRows.forEach((row) => {
-        const x1 = scaleX(row.xBase);
-        const y1 = scaleY(row.yBase);
-        const x2 = scaleX(row.x);
-        const y2 = scaleY(row.y);
-        content += `<line x1="${x1}" y1="${y1}" x2="${x2}" y2="${y2}" stroke="#f59e0b" stroke-width="2.2" stroke-dasharray="8 6" />`;
-        content += `<circle cx="${x2}" cy="${y2}" r="5.5" fill="#f59e0b" stroke="white" stroke-width="2" />`;
-        content += `<text x="${x2 + 10}" y="${y2 - 8}" fill="#fde68a" font-size="13" font-weight="700">${row.name}</text>`;
-        content += `<text x="${x2 + 10}" y="${y2 + 9}" fill="rgba(254,240,138,.92)" font-size="11">origem ${row.from}</text>`;
-      });
-
-      svg.innerHTML = content;
-    }
-
-    function exportCsv() {
-      if (!lastComputation) {
-        alert("Faça um cálculo antes de exportar o CSV.");
-        return;
-      }
-
-      const header = [
-        "indice",
-        "segmento",
-        "angulo_medido_graus",
-        "angulo_corrigido_graus",
-        "correcao_angular_graus",
-        "distancia_m",
-        "azimute_graus",
-        "px_bruto",
-        "py_bruto",
-        "correcao_x",
-        "correcao_y",
-        "px_corrigido",
-        "py_corrigido",
-        "x_inicio",
-        "y_inicio",
-        "x_fim",
-        "y_fim"
-      ];
-
-      const rows = lastComputation.rows.map(row => [
-        row.index,
-        row.segment,
-        row.measuredAngle,
-        row.correctedAngle,
-        row.angleCorrection,
-        row.distance,
-        row.azimuth,
-        row.rawDx,
-        row.rawDy,
-        row.corrX,
-        row.corrY,
-        row.corrDx,
-        row.corrDy,
-        row.xStart,
-        row.yStart,
-        row.xEnd,
-        row.yEnd,
-      ]);
-
-      const pointHeader = ["ponto", "x", "y"];
-      const pointRows = lastComputation.pointCoords.map(p => [p.label, p.x, p.y]);
-      const irrHeader = ["indice", "nome", "origem", "azimute_base", "angulo", "azimute_final", "distancia", "dx", "dy", "x", "y"];
-      const irrRows = lastComputation.irradiationRows.map(r => [r.index, r.name, r.from, r.baseAzimuth, r.angle, r.azimuth, r.distance, r.dx, r.dy, r.x, r.y]);
-
-      const csvLines = [];
-      csvLines.push("Planilha final");
-      csvLines.push(header.join(";"));
-      rows.forEach(r => csvLines.push(r.join(";")));
-      csvLines.push("");
-      csvLines.push("Coordenadas absolutas");
-      csvLines.push(pointHeader.join(";"));
-      pointRows.forEach(r => csvLines.push(r.join(";")));
-      csvLines.push("");
-      csvLines.push("Irradiacoes");
-      csvLines.push(irrHeader.join(";"));
-      irrRows.forEach(r => csvLines.push(r.join(";")));
-
-      const blob = new Blob([csvLines.join("\n")], { type: "text/csv;charset=utf-8;" });
-      const url = URL.createObjectURL(blob);
-      const link = document.createElement("a");
-      link.href = url;
-      link.download = "planilha_calculo_planimetrico.csv";
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-      URL.revokeObjectURL(url);
-    }
-
-    function calculateAndRender() {
-      try {
-        const data = readInputs();
-        const computation = computeTraverse(data);
-        lastComputation = computation;
-        renderSummary(computation);
-      } catch (error) {
-        emptyStateEl.style.display = "block";
-        resultsContentEl.style.display = "none";
-        resultsContentEl.innerHTML = "";
-        setStatusCards([
-          { label: "Fechamento angular", value: "Erro de entrada", className: "danger" },
-          { label: "Tolerância angular", value: "—", className: "" },
-          { label: "Fechamento linear", value: "—", className: "" },
-          { label: "Tolerância linear", value: "—", className: "" },
-        ]);
-        emptyStateEl.innerHTML = `<strong>Não foi possível calcular.</strong><br>${error.message}`;
-      }
-    }
-
-    function loadClassExample() {
-      $("nVertices").value = 4;
-      $("nIrradiacoes").value = 3;
-      $("azPartida").value = "100°";
-      $("xInicial").value = 100;
-      $("yInicial").value = 100;
-      $("constB").value = 180;
-      $("constD").value = 2.20;
-      $("rotulosInput").value = "A,B,C,D";
-      buildDynamicInputs();
-
-      const exampleAngles = ["76°33'", "113°03'", "54°05'", "116°16'"];
-      const exampleDistances = [113.37, 119.22, 145.10, 79.56];
-      exampleAngles.forEach((value, i) => { $("angle_" + i).value = value; });
-      exampleDistances.forEach((value, i) => { $("dist_" + i).value = value; });
-
-      const irrExample = [
-        { name: "Ib1", from: "B", angle: "25°00'", dist: 38.5 },
-        { name: "Ib2", from: "B", angle: "62°30'", dist: 24.8 },
-        { name: "Id1", from: "D", angle: "40°15'", dist: 31.2 },
-      ];
-      irrExample.forEach((irr, i) => {
-        $("irr_name_" + i).value = irr.name;
-        $("irr_from_" + i).value = irr.from;
-        $("irr_angle_" + i).value = irr.angle;
-        $("irr_dist_" + i).value = irr.dist;
-      });
-      calculateAndRender();
-    }
-
-    $("btnGerar").addEventListener("click", buildDynamicInputs);
-    $("btnCalcular").addEventListener("click", calculateAndRender);
-    $("btnExemplo").addEventListener("click", loadClassExample);
-    $("btnCsv").addEventListener("click", exportCsv);
-    nVerticesEl.addEventListener("change", buildDynamicInputs);
-    $("nIrradiacoes").addEventListener("change", buildDynamicInputs);
-
-    buildDynamicInputs();
-    loadClassExample();
-  </script>
+/* ═══════════════════════════════════════════════════════════════
+   INIT
+═══════════════════════════════════════════════════════════════ */
+buildDynamic();
+</script>
 </body>
 </html>
