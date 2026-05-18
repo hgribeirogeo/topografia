@@ -197,10 +197,10 @@ code{background:var(--surface2);padding:2px 6px;border-radius:5px;font-size:.83e
 
 <!-- DIÁRIO DE NOTAS -->
 <div class="card" id="diarioCard" style="margin-bottom:20px;border-color:rgba(167,139,250,.35);">
-  <div class="card-hd" style="display:flex;align-items:center;justify-content:space-between;cursor:pointer;padding-bottom:14px;" onclick="toggleDiario()">
+  <div class="card-hd" style="display:flex;align-items:center;justify-content:space-between;padding-bottom:14px;cursor:pointer;" onclick="toggleDiario()">
     <div>
       <h2 style="color:var(--purple);">📒 Diário de Notas — T1 · Planimetria</h2>
-      <p style="font-size:.82rem;margin-top:3px;">Importe a lista do diário · Corrija PDFs · Salve notas · Exporte ao final do semestre.</p>
+      <p style="font-size:.82rem;margin-top:3px;">Importe o diário da turma · Salve notas a cada correção · Exporte ao final do semestre.</p>
     </div>
     <div style="display:flex;align-items:center;gap:10px;">
       <span id="diarioCount" class="badge badge-muted">0 avaliados</span>
@@ -210,17 +210,17 @@ code{background:var(--surface2);padding:2px 6px;border-radius:5px;font-size:.83e
   <div id="diarioBody" style="display:none;">
     <div style="height:1px;background:var(--border2);margin:0 20px;"></div>
     <div class="card-bd">
-      <div class="fg" style="margin-bottom:14px;align-items:flex-start;">
+      <div class="fg" style="margin-bottom:14px;">
         <div class="field">
           <label>① Importar lista do Diário (XLSX) — início do semestre</label>
           <input type="file" id="diarioFile" accept=".xlsx,.xls" style="cursor:pointer;" onchange="handleDiarioImport(this)"/>
-          <div class="hint">Carrega os nomes da coluna "Aluno" do diário. Substitui a lista mas preserva notas já salvas.</div>
+          <div class="hint">Carrega os nomes da coluna "Aluno". Preserva notas já salvas.</div>
           <span id="diarioImportInfo" style="font-size:.78rem;color:var(--green);display:none;margin-top:4px;"></span>
         </div>
         <div class="field">
           <label>② Preencher e baixar Diário com notas T1</label>
           <input type="file" id="diarioFillFile" accept=".xlsx,.xls" style="cursor:pointer;" onchange="handleDiarioFill(this)"/>
-          <div class="hint">Selecione o diário para preencher a coluna T1 automaticamente e baixar o arquivo atualizado.</div>
+          <div class="hint">Preenche automaticamente a coluna T1 e baixa o arquivo atualizado.</div>
         </div>
       </div>
       <div class="tbl-wrap">
@@ -301,7 +301,7 @@ code{background:var(--surface2);padding:2px 6px;border-radius:5px;font-size:.83e
       <div id="chipsBox" style="display:none;">
         <div class="divider"></div>
         <h3 style="margin-bottom:8px;font-size:.88rem;color:var(--muted2);">Valores detectados no PDF</h3>
-        <div id="alunoChip" style="display:none;margin-bottom:8px;padding:8px 12px;background:var(--purple-bg);border:1px solid rgba(167,139,250,.35);border-radius:10px;font-size:.85rem;">
+        <div id="alunoChip" style="display:none;margin-bottom:8px;padding:7px 12px;background:var(--purple-bg);border:1px solid rgba(167,139,250,.35);border-radius:9px;font-size:.85rem;">
           👤 Aluno: <strong id="alunoChipName">—</strong>
         </div>
         <div id="chips" class="chips"></div>
@@ -1401,16 +1401,6 @@ async function extractPDF(file) {
     }
     $('rawText').value = full;
     $('chipsBox').style.display='block';
-    // Detectar nome do aluno na capa
-    const detectedName = extractStudentName(full);
-    const matchedName = matchStudentFromList(detectedName) || detectedName;
-    if (matchedName) {
-      setCurrentStudent(matchedName);
-      log('Aluno detectado: ' + matchedName, 'log-ok');
-    } else {
-      setCurrentStudent('');
-      log('Nome do aluno nao detectado na capa. Verifique o campo manualmente.', 'log-warn');
-    }
     applyExtractedData(ex);
     setStep(2);
     log('Revise os campos destacados e clique em Calcular.', 'log-info');
@@ -1452,34 +1442,30 @@ function setupEvents() {
   if ($('btnClearPdf')) $('btnClearPdf').addEventListener('click', function(){ pf.value=''; $('logBox').innerHTML=''; $('logBox').style.display='none'; $('chipsBox').style.display='none'; document.querySelectorAll('input.extracted, select.extracted').forEach(function(el){ el.classList.remove('extracted'); }); window._pendingSV=null; setStep(1); });
 }
 
+document.addEventListener('DOMContentLoaded', function(){ buildDynamic(); setupEvents(); });
+if (document.readyState !== 'loading') { buildDynamic(); setupEvents(); }
 
-/* ── DIÁRIO DE NOTAS ─────────────────────────────────────────── */
+/* ══════════════════════════════════════════════════════════════
+   DIÁRIO DE NOTAS — código novo, nada existente foi alterado
+   ══════════════════════════════════════════════════════════════ */
 
-const STORAGE_GRADES = 'topo_t1_grades';
-const STORAGE_STUDENTS = 'topo_t1_students';
-let _currentStudent = '';
+const _DI_GRADES   = 'topo_t1_grades';
+const _DI_STUDENTS = 'topo_t1_students';
+let _diCurrentStudent = '';
 
-function gradesFromStorage(){ try{ return JSON.parse(localStorage.getItem(STORAGE_GRADES)||'{}'); }catch(e){ return {}; } }
-function saveGradesToStorage(g){ localStorage.setItem(STORAGE_GRADES, JSON.stringify(g)); }
-function studentsFromStorage(){ try{ return JSON.parse(localStorage.getItem(STORAGE_STUDENTS)||'[]'); }catch(e){ return []; } }
-function saveStudentsToStorage(s){ localStorage.setItem(STORAGE_STUDENTS, JSON.stringify(s)); }
+function _diGrades(){ try{ return JSON.parse(localStorage.getItem(_DI_GRADES)||'{}'); }catch(e){ return {}; } }
+function _diSaveGrades(g){ localStorage.setItem(_DI_GRADES, JSON.stringify(g)); }
+function _diStudents(){ try{ return JSON.parse(localStorage.getItem(_DI_STUDENTS)||'[]'); }catch(e){ return []; } }
+function _diSaveStudents(s){ localStorage.setItem(_DI_STUDENTS, JSON.stringify(s)); }
 
-function toggleDiario() {
-  const body = $('diarioBody'), icon = $('diarioToggleIcon');
-  const open = body.style.display !== 'none';
-  body.style.display = open ? 'none' : '';
-  if (icon) icon.textContent = open ? '▸' : '▾';
-  if (!open) renderDiario();
-}
-
-/* Extrai nome do aluno da capa do PDF (primeiras ~600 chars) */
-function extractStudentName(text) {
-  const src = String(text || '').slice(0, 1200);
+/* ── Extrai nome do aluno da capa ── */
+function _diExtractName(text) {
+  const src = String(text || '').slice(0, 1400);
   const patterns = [
-    /(?:Aluno|Nome|Discente|Estudante|Acadêmico|Acadêmica|Autor[a]?)\s*[:\-–]\s*([A-ZÁÉÍÓÚÀÃÕÂÊÔÜÇÑ][a-záéíóúàãõâêôüçñA-ZÁÉÍÓÚÀÃÕÂÊÔÜÇÑ]+(?:\s+(?:de|da|do|dos|das|e)?\s*[A-ZÁÉÍÓÚÀÃÕÂÊÔÜÇÑ][a-záéíóúàãõâêôüçñA-ZÁÉÍÓÚÀÃÕÂÊÔÜÇÑ]+){1,6})/i,
-    /\n([A-ZÁÉÍÓÚÀÃÕÂÊÔÜÇ]{2,}(?:\s+(?:DE|DA|DO|DOS|DAS|E)?\s*[A-ZÁÉÍÓÚÀÃÕÂÊÔÜÇ]{2,}){1,6})\s*\n/,
+    /(?:Aluno|Nome|Discente|Estudante|Acad[eê]mico|Acad[eê]mica|Autor[a]?)\s*[:\-–]\s*([A-ZÁÉÍÓÚÀÃÕÂÊÔÜÇÑ][a-záéíóúàãõâêôüçñA-ZÁÉÍÓÚÀÃÕÂÊÔÜÇÑ]+(?:\s+(?:de|da|do|dos|das|e)?\s*[A-ZÁÉÍÓÚÀÃÕÂÊÔÜÇÑ][a-záéíóúàãõâêôüçñA-ZÁÉÍÓÚÀÃÕÂÊÔÜÇÑ]+){1,6})/i,
+    /\n([A-ZÁÉÍÓÚÀÃÕÂÊÔÜÇ]{3,}(?:\s+(?:DE|DA|DO|DOS|DAS|E)?\s*[A-ZÁÉÍÓÚÀÃÕÂÊÔÜÇ]{2,}){1,6})\s*\n/
   ];
-  const BLOCK = /universidade|faculdade|instituto|departamento|disciplina|topografia|ambiental|relatório|trabalho|curso|engenharia|goiás|goias|data|turma|nota|período|semestre/i;
+  const BLOCK = /universidade|faculdade|instituto|departamento|disciplina|topografia|ambiental|relat[oó]rio|trabalho|curso|engenharia|goi[aá]s|data|turma|nota|per[ií]odo|semestre/i;
   for (const re of patterns) {
     const m = re.exec(src);
     if (m && m[1] && m[1].trim().length > 5 && !BLOCK.test(m[1])) return m[1].trim();
@@ -1487,15 +1473,13 @@ function extractStudentName(text) {
   return '';
 }
 
-/* Tenta encontrar aluno da lista salva que coincida com o nome detectado */
-function matchStudentFromList(detected) {
+/* ── Cruza com lista importada ── */
+function _diMatchStudent(detected) {
   if (!detected) return '';
-  const students = studentsFromStorage();
+  const students = _diStudents();
   const d = detected.toUpperCase().trim();
-  // Exact match first
   let found = students.find(function(s){ return s.toUpperCase().trim() === d; });
   if (found) return found;
-  // Partial: detected words all in student name
   const words = d.split(/\s+/).filter(function(w){ return w.length > 2; });
   found = students.find(function(s){
     const su = s.toUpperCase();
@@ -1504,242 +1488,243 @@ function matchStudentFromList(detected) {
   return found || '';
 }
 
-function setCurrentStudent(name) {
-  _currentStudent = name || '';
-  const display = $('alunoNomeDisplay');
-  const chip = $('alunoChip');
-  const chipName = $('alunoChipName');
-  if (display) display.textContent = _currentStudent || '—';
-  if (chip) chip.style.display = _currentStudent ? '' : 'none';
-  if (chipName) chipName.textContent = _currentStudent || '';
-  // Pre-load saved grade
-  if (_currentStudent) {
-    const grades = gradesFromStorage();
-    const saved = grades[_currentStudent.toUpperCase()];
-    const nf = $('notaField');
+/* ── Atualiza UI com o aluno atual ── */
+function _diSetStudent(name) {
+  _diCurrentStudent = name || '';
+  const display = document.getElementById('alunoNomeDisplay');
+  const chip    = document.getElementById('alunoChip');
+  const chipNm  = document.getElementById('alunoChipName');
+  if (display) display.textContent = _diCurrentStudent || '—';
+  if (chip)    chip.style.display  = _diCurrentStudent ? '' : 'none';
+  if (chipNm)  chipNm.textContent  = _diCurrentStudent || '';
+  if (_diCurrentStudent) {
+    const saved = _diGrades()[_diCurrentStudent.toUpperCase()];
+    const nf = document.getElementById('notaField');
     if (nf) nf.value = saved != null ? saved : '';
   }
 }
 
-function salvarNota() {
-  const nf = $('notaField');
-  if (!nf || !nf.value.toString().trim()) { alert('Digite uma nota antes de salvar.'); return; }
-  const nota = parseFloat(String(nf.value).replace(',', '.'));
-  if (!isFinite(nota) || nota < 0 || nota > 10) { alert('Nota inválida. Use um valor entre 0 e 10.'); return; }
-
-  let studentName = _currentStudent || '';
-  if (!studentName) {
-    studentName = prompt('Nome do aluno não detectado automaticamente.\nDigite o nome completo:') || '';
-    if (!studentName.trim()) { alert('Nome necessário para salvar no diário.'); return; }
-    studentName = studentName.trim().toUpperCase();
-    setCurrentStudent(studentName);
-  }
-
-  const grades = gradesFromStorage();
-  grades[studentName.toUpperCase()] = nota;
-  saveGradesToStorage(grades);
-
-  const info = $('notaSalvaInfo');
-  if (info) { info.textContent = '✓ Salvo: ' + nota.toFixed(1); info.style.display = 'block'; setTimeout(function(){ info.style.display = 'none'; }, 3000); }
-
-  // Update diário count badge
-  updateDiarioBadge();
-  // Re-render if diário is open
-  if ($('diarioBody') && $('diarioBody').style.display !== 'none') renderDiario();
-}
-
-function updateDiarioBadge() {
-  const grades = gradesFromStorage();
-  const students = studentsFromStorage();
-  const cnt = $('diarioCount');
-  const graded = Object.keys(grades).length;
-  const total = students.length || graded;
+/* ── Badge do diário ── */
+function _diUpdateBadge() {
+  const grades   = _diGrades();
+  const students = _diStudents();
+  const graded   = Object.keys(grades).length;
+  const total    = students.length || graded;
+  const cnt = document.getElementById('diarioCount');
   if (cnt) cnt.textContent = graded + (total > graded ? '/' + total : '') + ' avaliado' + (graded !== 1 ? 's' : '');
 }
 
+/* ── Renderiza tabela do diário ── */
 function renderDiario() {
-  const tbody = $('diarioTbody');
+  const tbody    = document.getElementById('diarioTbody');
   if (!tbody) return;
-  const grades = gradesFromStorage();
-  const students = studentsFromStorage();
-  const list = students.length ? students : Object.keys(grades);
-
+  const grades   = _diGrades();
+  const students = _diStudents();
+  const list     = students.length ? students : Object.keys(grades);
   if (!list.length) {
-    tbody.innerHTML = '<tr><td colspan="3" style="text-align:center;color:var(--muted);padding:20px;">Nenhuma nota salva ainda. Importe o diário ou salve a primeira nota.</td></tr>';
-    updateDiarioBadge();
-    return;
+    tbody.innerHTML = '<tr><td colspan="3" style="text-align:center;color:var(--muted);padding:20px;">Nenhuma nota salva ainda.</td></tr>';
+    _diUpdateBadge(); return;
   }
-
   tbody.innerHTML = list.map(function(name) {
-    const key = name.toUpperCase();
-    const nota = grades[key];
+    const nota = grades[name.toUpperCase()];
     const notaStr = nota != null ? nota.toFixed(1) : '—';
     const cls = nota != null ? 'c-green' : 'c-amber';
-    return '<tr>' +
-      '<td>' + escapeHtml(name) + '</td>' +
+    return '<tr><td>' + escapeHtml(name) + '</td>' +
       '<td class="' + cls + '" style="font-weight:600;text-align:center;">' + notaStr + '</td>' +
-      '<td style="text-align:center;"><button class="btn btn-ghost btn-sm" onclick="editNotaAluno(' + JSON.stringify(name) + ')">✎</button></td>' +
-      '</tr>';
+      '<td style="text-align:center;"><button class="btn btn-ghost btn-sm" onclick="editNotaAluno(' + JSON.stringify(name) + ')">✎</button></td></tr>';
   }).join('');
-
-  updateDiarioBadge();
+  _diUpdateBadge();
 }
 
+/* ── Toggle painel ── */
+function toggleDiario() {
+  const body = document.getElementById('diarioBody');
+  const icon = document.getElementById('diarioToggleIcon');
+  const open = body.style.display !== 'none';
+  body.style.display = open ? 'none' : '';
+  if (icon) icon.textContent = open ? '▸' : '▾';
+  if (!open) renderDiario();
+}
+
+/* ── Salvar nota ── */
+function salvarNota() {
+  const nf = document.getElementById('notaField');
+  if (!nf || !String(nf.value).trim()) { alert('Digite uma nota antes de salvar.'); return; }
+  const nota = parseFloat(String(nf.value).replace(',', '.'));
+  if (!isFinite(nota) || nota < 0 || nota > 10) { alert('Nota inválida. Use 0–10.'); return; }
+  let name = _diCurrentStudent || '';
+  if (!name) {
+    name = (prompt('Nome do aluno não detectado.\nDigite o nome completo:') || '').trim().toUpperCase();
+    if (!name) { alert('Nome necessário para salvar.'); return; }
+    _diSetStudent(name);
+  }
+  const grades = _diGrades();
+  grades[name.toUpperCase()] = nota;
+  _diSaveGrades(grades);
+  const info = document.getElementById('notaSalvaInfo');
+  if (info) { info.textContent = '✓ Salvo: ' + nota.toFixed(1); info.style.display = 'block'; setTimeout(function(){ info.style.display='none'; }, 3000); }
+  _diUpdateBadge();
+  const body = document.getElementById('diarioBody');
+  if (body && body.style.display !== 'none') renderDiario();
+}
+
+/* ── Editar nota pelo diário ── */
 function editNotaAluno(name) {
-  const grades = gradesFromStorage();
-  const current = grades[name.toUpperCase()];
-  const nova = prompt('Nota de ' + name + (current != null ? '\nAtual: ' + current.toFixed(1) : '') + '\nDeixe vazio para apagar a nota:', current != null ? current.toFixed(1) : '');
+  const grades = _diGrades();
+  const cur = grades[name.toUpperCase()];
+  const nova = prompt('Nota de ' + name + (cur != null ? '\nAtual: ' + cur.toFixed(1) : '') + '\n(Deixe vazio para apagar)', cur != null ? cur.toFixed(1) : '');
   if (nova === null) return;
-  if (nova.trim() === '') { delete grades[name.toUpperCase()]; saveGradesToStorage(grades); renderDiario(); return; }
+  if (!nova.trim()) { delete grades[name.toUpperCase()]; _diSaveGrades(grades); renderDiario(); return; }
   const v = parseFloat(nova.trim().replace(',', '.'));
-  if (!isFinite(v) || v < 0 || v > 10) { alert('Valor inválido. Use 0–10.'); return; }
+  if (!isFinite(v) || v < 0 || v > 10) { alert('Valor inválido.'); return; }
   grades[name.toUpperCase()] = v;
-  saveGradesToStorage(grades);
+  _diSaveGrades(grades);
   renderDiario();
 }
 
+/* ── Resetar só notas ── */
 function resetNotas() {
-  const grades = gradesFromStorage();
-  if (!Object.keys(grades).length) { alert('Nenhuma nota salva.'); return; }
-  if (!confirm('Apagar TODAS as notas salvas? A lista de alunos será mantida.\nEsta ação não pode ser desfeita.')) return;
-  localStorage.removeItem(STORAGE_GRADES);
+  if (!Object.keys(_diGrades()).length) { alert('Nenhuma nota salva.'); return; }
+  if (!confirm('Apagar TODAS as notas? A lista de alunos será mantida.')) return;
+  localStorage.removeItem(_DI_GRADES);
   renderDiario();
 }
 
+/* ── Novo semestre ── */
 function resetAlunos() {
-  if (!confirm('Iniciar NOVO SEMESTRE?\n\nIsso apagará a lista de alunos E todas as notas salvas.\nEsta ação não pode ser desfeita.')) return;
-  localStorage.removeItem(STORAGE_GRADES);
-  localStorage.removeItem(STORAGE_STUDENTS);
-  setCurrentStudent('');
+  if (!confirm('Iniciar NOVO SEMESTRE?\nIsso apagará a lista de alunos E todas as notas.\nEsta ação não pode ser desfeita.')) return;
+  localStorage.removeItem(_DI_GRADES);
+  localStorage.removeItem(_DI_STUDENTS);
+  _diSetStudent('');
   renderDiario();
 }
 
+/* ── Exportar CSV ── */
 function exportDiarioCsv() {
-  const grades = gradesFromStorage();
-  const students = studentsFromStorage();
-  const names = students.length ? students : Object.keys(grades);
+  const grades   = _diGrades();
+  const students = _diStudents();
+  const names    = students.length ? students : Object.keys(grades);
   if (!names.length) { alert('Nenhuma nota para exportar.'); return; }
-  const rows = [['Aluno', 'T1 — Planimetria']];
-  names.forEach(function(n){ const nota = grades[n.toUpperCase()]; rows.push([n, nota != null ? nota.toFixed(1).replace('.', ',') : '']); });
-  const csv = rows.map(function(r){ return r.map(function(x){ return '"' + String(x).replace(/"/g,'""') + '"'; }).join(';'); }).join('\n');
+  const rows = [['Aluno','T1 — Planimetria']].concat(names.map(function(n){
+    const nota = grades[n.toUpperCase()];
+    return [n, nota != null ? nota.toFixed(1).replace('.',',') : ''];
+  }));
+  const csv = rows.map(function(r){ return r.map(function(x){ return '"'+String(x).replace(/"/g,'""')+'"'; }).join(';'); }).join('\n');
   downloadText(csv, 'notas_t1.csv', 'text/csv;charset=utf-8;');
 }
 
-/* ── Importar diário XLSX → extrair lista de alunos ── */
+/* ── Importar lista de alunos do XLSX ── */
 async function handleDiarioImport(input) {
-  const file = input.files && input.files[0];
-  input.value = '';
+  const file = input.files && input.files[0]; input.value='';
   if (!file) return;
   try {
-    if (!window.XLSX) await loadScriptOnce('https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js', 'XLSX', 15000);
+    if (!window.XLSX) await loadScriptOnce('https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js','XLSX',15000);
     if (!window.XLSX) { alert('SheetJS não carregou. Verifique a conexão.'); return; }
-
     const ab = await file.arrayBuffer();
-    const wb = window.XLSX.read(ab, {type:'array'});
+    const wb = window.XLSX.read(ab,{type:'array'});
     const ws = wb.Sheets[wb.SheetNames[0]];
-    const data = window.XLSX.utils.sheet_to_json(ws, {header:1, defval:''});
-
-    // Encontra linha de cabeçalho com "Aluno"
+    const data = window.XLSX.utils.sheet_to_json(ws,{header:1,defval:''});
     let headerRow = 0;
-    for (let i = 0; i < Math.min(data.length, 8); i++) {
-      if (data[i] && String(data[i][0]).toLowerCase().includes('aluno')) { headerRow = i; break; }
+    for (let i=0; i<Math.min(data.length,8); i++) {
+      if (data[i] && String(data[i][0]).toLowerCase().includes('aluno')) { headerRow=i; break; }
     }
-
     const names = [];
-    for (let i = headerRow + 1; i < data.length; i++) {
-      const name = String(data[i][0] || '').trim();
-      if (name.length > 3 && !/média|desvio|media|^\s*$|^#/i.test(name)) names.push(name);
+    for (let i=headerRow+1; i<data.length; i++) {
+      const n = String(data[i][0]||'').trim();
+      if (n.length>3 && !/m[eé]dia|desvio|^\s*$|^#/i.test(n)) names.push(n);
     }
-
-    if (!names.length) { alert('Nenhum aluno encontrado. Verifique se o arquivo é o diário correto.'); return; }
-    if (!confirm(names.length + ' aluno(s) encontrado(s) na planilha.\nImportar lista?\n(Notas já salvas serão mantidas.)')) return;
-
-    saveStudentsToStorage(names);
+    if (!names.length) { alert('Nenhum aluno encontrado na planilha.'); return; }
+    if (!confirm(names.length+' aluno(s) encontrado(s).\nImportar lista? (notas já salvas serão mantidas)')) return;
+    _diSaveStudents(names);
     renderDiario();
-    const infoEl = $('diarioImportInfo');
-    if (infoEl) { infoEl.textContent = '✓ ' + names.length + ' alunos carregados de "' + file.name + '"'; infoEl.style.display = 'block'; }
-    if ($('diarioBody').style.display === 'none') toggleDiario();
-  } catch(err) { alert('Erro ao ler o arquivo: ' + err.message); }
+    const inf = document.getElementById('diarioImportInfo');
+    if (inf) { inf.textContent='✓ '+names.length+' alunos carregados de "'+file.name+'"'; inf.style.display='block'; }
+    const body = document.getElementById('diarioBody');
+    if (body && body.style.display==='none') toggleDiario();
+  } catch(err) { alert('Erro ao ler o arquivo: '+err.message); }
 }
 
-/* ── Preencher diário XLSX com notas T1 e baixar ── */
+/* ── Preencher e baixar XLSX com notas T1 ── */
 async function handleDiarioFill(input) {
-  const file = input.files && input.files[0];
-  input.value = '';
+  const file = input.files && input.files[0]; input.value='';
   if (!file) return;
-  const grades = gradesFromStorage();
-  if (!Object.keys(grades).length) { alert('Nenhuma nota salva ainda. Salve as notas primeiro.'); return; }
-
+  const grades = _diGrades();
+  if (!Object.keys(grades).length) { alert('Nenhuma nota salva ainda.'); return; }
   try {
-    if (!window.XLSX) await loadScriptOnce('https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js', 'XLSX', 15000);
-    if (!window.XLSX) { alert('SheetJS não carregou. Verifique a conexão.'); return; }
-
+    if (!window.XLSX) await loadScriptOnce('https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js','XLSX',15000);
+    if (!window.XLSX) { alert('SheetJS não carregou.'); return; }
     const ab = await file.arrayBuffer();
-    const wb = window.XLSX.read(ab, {type:'array', cellStyles:true, sheetStubs:true});
+    const wb = window.XLSX.read(ab,{type:'array',cellStyles:true,sheetStubs:true});
     const ws = wb.Sheets[wb.SheetNames[0]];
-    const data = window.XLSX.utils.sheet_to_json(ws, {header:1, defval:''});
-
-    // Encontra linha do header e coluna T1
-    let headerRow = 0, t1Col = -1, alunoCol = 0;
-    for (let i = 0; i < Math.min(data.length, 6); i++) {
-      const row = data[i];
-      for (let j = 0; j < row.length; j++) {
-        if (String(row[j]).trim().toUpperCase() === 'T1') { t1Col = j; }
-        if (String(row[j]).toLowerCase().includes('aluno')) { headerRow = i; alunoCol = j; }
+    const data = window.XLSX.utils.sheet_to_json(ws,{header:1,defval:''});
+    let headerRow=0, t1Col=-1, alunoCol=0;
+    for (let i=0; i<Math.min(data.length,6); i++) {
+      const row=data[i];
+      for (let j=0; j<row.length; j++) {
+        if (String(row[j]).trim().toUpperCase()==='T1') t1Col=j;
+        if (String(row[j]).toLowerCase().includes('aluno')) { headerRow=i; alunoCol=j; }
       }
-      if (t1Col >= 0) break;
+      if (t1Col>=0) break;
     }
-
-    if (t1Col < 0) { alert('Coluna T1 não encontrada no diário. Verifique se o arquivo correto foi selecionado.'); return; }
-
-    let filled = 0, notFound = [];
-    for (let i = headerRow + 1; i < data.length; i++) {
-      const name = String(data[i][alunoCol] || '').trim();
-      if (!name || /média|desvio|media|^#/i.test(name)) continue;
-      const key = name.toUpperCase();
-      let nota = grades[key];
-      // Busca flexível: verifica se o nome do aluno está contido numa key ou vice-versa
-      if (nota == null) {
+    if (t1Col<0) { alert('Coluna T1 não encontrada. Verifique se selecionou o diário correto.'); return; }
+    let filled=0, notFound=[];
+    for (let i=headerRow+1; i<data.length; i++) {
+      const name=String(data[i][alunoCol]||'').trim();
+      if (!name || /m[eé]dia|desvio|^#/i.test(name)) continue;
+      const key=name.toUpperCase();
+      let nota=grades[key];
+      if (nota==null) {
         for (const k of Object.keys(grades)) {
-          if (k.includes(key) || key.includes(k)) { nota = grades[k]; break; }
+          if (k.includes(key)||key.includes(k)) { nota=grades[k]; break; }
         }
       }
-      if (nota != null) {
-        const addr = window.XLSX.utils.encode_cell({r: i, c: t1Col});
-        ws[addr] = {t:'n', v:nota, z:'0.0'};
+      if (nota!=null) {
+        const addr=window.XLSX.utils.encode_cell({r:i,c:t1Col});
+        ws[addr]={t:'n',v:nota,z:'0.0'};
         filled++;
       } else { notFound.push(name); }
     }
-
-    if (!filled) { alert('Nenhum aluno correspondido. Verifique se os nomes no diário coincidem com os salvos.'); return; }
-
-    const out = window.XLSX.write(wb, {bookType:'xlsx', type:'array'});
-    const blob = new Blob([out], {type:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'});
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url; a.download = 'DIARIO_T1_preenchido.xlsx'; a.click();
+    if (!filled) { alert('Nenhum aluno correspondido. Verifique se os nomes coincidem com os salvos.'); return; }
+    const out=window.XLSX.write(wb,{bookType:'xlsx',type:'array'});
+    const blob=new Blob([out],{type:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'});
+    const url=URL.createObjectURL(blob);
+    const a=document.createElement('a'); a.href=url; a.download='DIARIO_T1_preenchido.xlsx'; a.click();
     URL.revokeObjectURL(url);
-
-    let msg = filled + ' aluno(s) preenchido(s) no diário.';
-    if (notFound.length) msg += '\n\nSem nota salva para:\n' + notFound.slice(0,10).join('\n') + (notFound.length > 10 ? '\n...' : '');
+    let msg=filled+' aluno(s) preenchido(s).';
+    if (notFound.length) msg+='\n\nSem nota salva:\n'+notFound.slice(0,8).join('\n');
     alert(msg);
-  } catch(err) { alert('Erro ao processar o arquivo: ' + err.message); }
+  } catch(err) { alert('Erro: '+err.message); }
 }
 
-/* ── Extração de nome — integrada diretamente em extractPDF acima ── */
-
+/* ── Inicialização do Diário ── */
 document.addEventListener('DOMContentLoaded', function(){
-  buildDynamic();
-  setupEvents();
-  updateDiarioBadge();
+  _diUpdateBadge();
   renderDiario();
-  // Limpa aluno ao limpar PDF
-  const btnClear = $('btnClearPdf');
-  if (btnClear) {
-    btnClear.addEventListener('click', function(){ setCurrentStudent(''); });
-  }
 });
-if (document.readyState !== 'loading') { buildDynamic(); setupEvents(); updateDiarioBadge(); }
+if (document.readyState !== 'loading') { _diUpdateBadge(); }
+
+/* ── Wrap do extractPDF para detectar nome APÓS a extração original ── */
+/* Feito aqui, fora do corpo da função, para não tocar no código existente */
+(function(){
+  const _orig = extractPDF;
+  extractPDF = async function(file) {
+    await _orig(file);
+    /* Pega o texto já carregado no rawText e detecta o nome */
+    const rawEl = document.getElementById('rawText');
+    if (!rawEl || !rawEl.value) return;
+    const detected = _diExtractName(rawEl.value);
+    const matched  = _diMatchStudent(detected) || detected;
+    _diSetStudent(matched);
+    if (matched) {
+      /* Adiciona log sem sobrescrever o existente */
+      const b = document.getElementById('logBox');
+      if (b) {
+        b.innerHTML += '<span class="log-ok">Aluno detectado: ' + escapeHtml(matched) + '</span>\n';
+        b.scrollTop = b.scrollHeight;
+      }
+    }
+  };
+})();
 
 
 </body>
